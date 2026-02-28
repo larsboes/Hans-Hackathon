@@ -15,6 +15,7 @@ interface AchievementsStripProps {
   demoLanded?: boolean
   logbookEntries?: LogbookEntry[]
   onEarningsChange?: (euros: number) => void
+  onAchievementsChange?: (achievements: Achievement[]) => void
 }
 
 function calcEarnings(list: Achievement[]): number {
@@ -23,7 +24,7 @@ function calcEarnings(list: Achievement[]): number {
     .reduce((sum, a) => sum + (a.secret ? 2 : 0.5), 0)
 }
 
-export function AchievementsStrip({ fullView = false, demoLanded = false, logbookEntries = [], onEarningsChange }: AchievementsStripProps) {
+export function AchievementsStrip({ fullView = false, demoLanded = false, logbookEntries = [], onEarningsChange, onAchievementsChange }: AchievementsStripProps) {
   const [achievements, setAchievements] = useState<Achievement[]>(
     ACHIEVEMENTS.map((a) => ({
       ...a,
@@ -64,6 +65,10 @@ export function AchievementsStrip({ fullView = false, demoLanded = false, logboo
   useEffect(() => {
     onEarningsChange?.(currentEarnings)
   }, [currentEarnings, onEarningsChange])
+
+  useEffect(() => {
+    onAchievementsChange?.(achievements)
+  }, [achievements, onAchievementsChange])
 
   function handleCollect(id: string) {
     setAchievements((prev) =>

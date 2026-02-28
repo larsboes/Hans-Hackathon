@@ -6,6 +6,7 @@ import { SuggestionChips } from '@/components/chat/suggestion-chips';
 import { useChatContext } from '@/components/chat/chat-context';
 import type { FlightData } from '@/lib/types';
 import { Send, Sparkles } from 'lucide-react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 
 interface ChatPanelProps {
@@ -121,9 +122,9 @@ export function ChatPanel({ flight, onFlightSelected }: ChatPanelProps) {
   return (
     <div className="flex h-full flex-col">
       {/* Chat Header */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-3">
-        <Sparkles className="h-4 w-4 text-primary" />
-        <h2 className="text-sm font-semibold text-foreground">AI Companion</h2>
+      <div className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
+        <Image src="/assets/Hans.png" alt="Hans" width={32} height={32} className="h-8 w-8 rounded-lg object-cover" />
+        <h2 className="text-base font-bold text-foreground">Hans</h2>
         <span className="text-xs text-muted-foreground">Gemini</span>
       </div>
 

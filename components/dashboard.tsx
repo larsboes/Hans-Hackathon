@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useCallback, type ReactNode } from 'react';
+import { useState, useCallback, useRef, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
-import type { FlightData, LogbookEntry } from '@/lib/types';
+import Link from 'next/link';
+import type { FlightData, LogbookEntry, Achievement, StorySection } from '@/lib/types';
+import { saveCompletedFlight } from '@/lib/storage';
 import { ChatPanel } from '@/components/chat/chat-panel';
 import { ChatProvider } from '@/components/chat/chat-context';
 import { LogbookPanel } from '@/components/logbook/logbook-panel';
 import { FlightInfo } from '@/components/flight/flight-info';
 import { AchievementsStrip } from '@/components/achievements/achievements-strip';
-import Image from 'next/image';
 import {
   MessageSquare,
   BookOpen,
@@ -18,6 +19,7 @@ import {
   Loader2,
   FastForward,
   Coins,
+  Plane,
 } from 'lucide-react';
 
 const FlightGlobe = dynamic(
@@ -62,10 +64,16 @@ export function Dashboard() {
   const [demoLanded, setDemoLanded] = useState(false);
   const [logbookEntries, setLogbookEntries] = useState<LogbookEntry[]>([]);
   const [earnings, setEarnings] = useState(0);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const flightSavedRef = useRef(false);
 
   const triggerDemo = useCallback(() => {
     if (!flight) return;
     setDemoLanded(true);
+  }, [flight]);
+
+  const generateDemoLogbook = useCallback(() => {
+    if (!flight) return;
     setLogbookEntries((prev) => {
       if (prev.length > 0) return prev;
       return [
@@ -118,79 +126,121 @@ export function Dashboard() {
     setDemoLanded(false);
     setLogbookEntries([]);
     setActiveTab('flight');
+    flightSavedRef.current = false;
+  }, []);
+
+  const handleStoryComplete = useCallback(
+    (sections: StorySection[]) => {
+      if (!flight || flightSavedRef.current) return;
+      flightSavedRef.current = true;
+
+      const moods = logbookEntries.map((e) => e.mood);
+      const averageMood =
+        moods.length > 0
+          ? moods.reduce((a, b) => a + b, 0) / moods.length
+          : 0;
+
+      const unlockedIds = achievements
+        .filter((a) => a.unlockedAt)
+        .map((a) => a.id);
+
+      saveCompletedFlight({
+        flightNumber: flight.flightNumber,
+        airline: flight.airline,
+        departure: flight.departure,
+        arrival: flight.arrival,
+        departureTime: flight.departureTime,
+        arrivalTime: flight.arrivalTime,
+        storySections: sections.map(({ title, text, imagePrompt }) => ({
+          title,
+          text,
+          imagePrompt,
+        })),
+        achievementIds: unlockedIds,
+        logbookEntries,
+        averageMood: Math.round(averageMood * 10) / 10,
+      });
+    },
+    [flight, logbookEntries, achievements],
+  );
+
+  const handleAchievementsChange = useCallback((achs: Achievement[]) => {
+    setAchievements(achs);
   }, []);
 
   return (
     <ChatProvider>
       <div className="flex h-screen flex-col overflow-hidden bg-background font-sans">
         {/* Header */}
-        <header className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3 lg:px-6">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/assets/Hans.png"
-              alt="Hans logo"
-              width={32}
-              height={32}
-              className="h-8 w-8 rounded-lg object-cover"
-            />
-            <h1 className="text-lg font-semibold text-foreground">Hans</h1>
-            {flight && (
-              <span className="hidden rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary sm:inline-block">
-                {flight.flightNumber}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {earnings > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-chart-4/15 px-2.5 py-1 text-xs font-semibold text-chart-4">
-                <Coins className="h-3.5 w-3.5" />
-                {earnings.toFixed(2)} &euro;
-              </span>
-            )}
-            {flight && !demoLanded && (
-              <button
-                onClick={triggerDemo}
-                className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary/15 hover:text-primary"
-              >
-                <FastForward className="h-3 w-3" />
-                Demo
-              </button>
-            )}
-            {flight ? (
-              <span
-                className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
-                  demoLanded
-                    ? 'bg-primary/15 text-primary'
-                    : 'bg-chart-1/15 text-chart-1',
-                )}
-              >
-                <span
-                  className={cn(
-                    'h-1.5 w-1.5 rounded-full',
-                    demoLanded ? 'bg-primary' : 'flight-pulse bg-chart-1',
-                  )}
-                />
-                {demoLanded ? 'Landed' : 'In Flight'}
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                Waiting for flight number
-              </span>
-            )}
-          </div>
-        </header>
+        <header className="hidden shrink-0 lg:hidden" />
 
         {/* Desktop Layout */}
         <div className="hidden flex-1 overflow-hidden lg:grid lg:grid-cols-[1fr_380px]">
           {/* Main Content Area */}
           <div className="flex flex-col overflow-hidden">
             {/* Flight Section Header */}
-            <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-3">
-              <h2 className="text-sm font-medium text-muted-foreground">
-                Current Flight
-              </h2>
-              {flight && <FlightInfo flight={flight} />}
+            <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
+              <h2 className="text-base font-bold text-foreground">Current Flight</h2>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/flights"
+                  className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary/15 hover:text-primary"
+                >
+                  <Plane className="h-3 w-3" />
+                  My Flights
+                </Link>
+                {earnings > 0 && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-chart-4/15 px-2.5 py-1 text-xs font-semibold text-chart-4">
+                    <Coins className="h-3.5 w-3.5" />
+                    {earnings.toFixed(2)} &euro;
+                  </span>
+                )}
+                {flight ? (
+                  <>
+                    <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary">
+                      {flight.flightNumber}
+                    </span>
+                    <span
+                      className={cn(
+                        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
+                        demoLanded
+                          ? 'bg-primary/15 text-primary'
+                          : 'bg-chart-1/15 text-chart-1',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'h-1.5 w-1.5 rounded-full',
+                          demoLanded ? 'bg-primary' : 'flight-pulse bg-chart-1',
+                        )}
+                      />
+                      {demoLanded ? 'Landed' : 'In Flight'}
+                    </span>
+                    {!demoLanded && (
+                      <button
+                        onClick={triggerDemo}
+                        className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary/15 hover:text-primary"
+                      >
+                        <FastForward className="h-3 w-3" />
+                        Demo Land
+                      </button>
+                    )}
+                    {logbookEntries.length === 0 && (
+                      <button
+                        onClick={generateDemoLogbook}
+                        className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary/15 hover:text-primary"
+                      >
+                        <BookOpen className="h-3 w-3" />
+                        Demo Logbook
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                    Waiting for flight number
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Top: Logbook + 3D Globe */}
@@ -205,6 +255,7 @@ export function Dashboard() {
                     onDeleteEntry={deleteLogbookEntry}
                     hasLanded={demoLanded}
                     flight={flight}
+                    onStoryComplete={handleStoryComplete}
                   />
                 </div>
 
@@ -244,6 +295,7 @@ export function Dashboard() {
                 demoLanded={demoLanded}
                 logbookEntries={logbookEntries}
                 onEarningsChange={setEarnings}
+                onAchievementsChange={handleAchievementsChange}
               />
             </div>
           </div>
@@ -321,6 +373,7 @@ export function Dashboard() {
                   onDeleteEntry={deleteLogbookEntry}
                   hasLanded={demoLanded}
                   flight={flight}
+                  onStoryComplete={handleStoryComplete}
                 />
               ) : (
                 <div className="flex h-full items-center justify-center p-6 text-center">
@@ -352,6 +405,7 @@ export function Dashboard() {
                 demoLanded={demoLanded}
                 logbookEntries={logbookEntries}
                 onEarningsChange={setEarnings}
+                onAchievementsChange={handleAchievementsChange}
               />
             </div>
           </div>
