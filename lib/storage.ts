@@ -13,8 +13,10 @@ export function saveCompletedFlight(flight: Omit<CompletedFlight, 'id' | 'savedA
     }
     flights.unshift(entry)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(flights))
+    console.log('[Hans] Flight saved to localStorage:', entry.id)
     return entry.id
-  } catch {
+  } catch (error) {
+    console.error('[Hans] Failed to save flight to localStorage:', error)
     return ''
   }
 }

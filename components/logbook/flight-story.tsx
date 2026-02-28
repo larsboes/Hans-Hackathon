@@ -27,6 +27,8 @@ export function FlightStory({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const storyCompleteCalledRef = useRef(false);
+  const onStoryCompleteRef = useRef(onStoryComplete);
+  onStoryCompleteRef.current = onStoryComplete;
 
   useEffect(() => {
     let cancelled = false;
@@ -52,9 +54,9 @@ export function FlightStory({
         setSections(storySections);
         setLoading(false);
 
-        if (!storyCompleteCalledRef.current && onStoryComplete) {
+        if (!storyCompleteCalledRef.current && onStoryCompleteRef.current) {
           storyCompleteCalledRef.current = true;
-          onStoryComplete(storySections);
+          onStoryCompleteRef.current(storySections);
         }
 
         // Step 2: Generate one image for the entire journey

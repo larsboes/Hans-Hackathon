@@ -11,13 +11,12 @@ export async function POST(req: Request) {
   };
 
   const entrySummary = entries
-    .map((e) => `[${e.category}] ${e.content} (mood: ${e.mood}/5)`)
-    .join('\n');
+    .map((e, i) => `${i + 1}. [${e.category}] "${e.content}" (mood: ${e.mood}/5)`)
+    .join('\n')
 
-  const achievementList =
-    achievements.length > 0
-      ? `Achievements unlocked: ${achievements.join(', ')}`
-      : '';
+  const achievementList = achievements.length > 0
+    ? `Achievements unlocked: ${achievements.join(', ')}`
+    : ''
 
   try {
     const result = await generateText({
@@ -36,25 +35,26 @@ Flight: ${flight.airline} ${flight.flightNumber} from ${flight.departure.city} (
 Departure: ${flight.departureTime}
 Arrival: ${flight.arrivalTime}
 
-Logbook entries:
+The passenger wrote ${entries.length} logbook entries during the flight. You MUST incorporate ALL of them into the story:
 ${entrySummary}
 
 ${achievementList}
 
+IMPORTANT: Every single logbook entry above MUST be directly referenced or woven into the story text. Do not ignore any entry.
+
 Return a JSON array with exactly 3 sections. Each section has:
 - "title": short English title
-- "text": 2-3 sentences in English, personal and warm tone, referencing the passenger's actual entries
+- "text": 2-3 sentences in English, personal and warm tone. Each sentence must reference specific details from the logbook entries above.
 - "imagePrompt": English description for image generation, describing a vivid scene related to this story section. Be specific about location, lighting, mood.
 
 Section themes:
 1. Departure - the start of the journey
-2. In-Flight Highlights - best moments during the flight
+2. In-Flight Highlights - best moments during the flight (weave in the logbook entries here)
 3. Landing - arrival and looking forward
 
 Return ONLY the JSON array, no markdown fences.`,
-      system:
-        'You are a travel storyteller. You create warm, personal narratives from flight data and logbook entries. Always return valid JSON.',
-    });
+      system: 'You are a travel storyteller. You create warm, personal narratives from flight data and logbook entries. You MUST incorporate every single logbook entry the passenger wrote into the story. Always return valid JSON.',
+    })
 
     const cleaned = result.text
       .replace(/^```(?:json)?\s*/, '')

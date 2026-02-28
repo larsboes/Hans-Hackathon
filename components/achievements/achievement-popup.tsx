@@ -131,6 +131,16 @@ export function AchievementPopup({ achievements, onDone }: AchievementPopupProps
         >
           {currentIndex + 1 < achievements.length ? 'Next' : 'Awesome!'}
         </button>
+
+        {/* Skip All */}
+        {currentIndex + 1 < achievements.length && (
+          <button
+            onClick={onDone}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Skip all
+          </button>
+        )}
       </div>
     </div>
   )

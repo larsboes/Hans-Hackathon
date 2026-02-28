@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useCallback, useRef, type ReactNode } from 'react';
+import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import type { FlightData, LogbookEntry, Achievement, StorySection } from '@/lib/types';
 import { saveCompletedFlight } from '@/lib/storage';
+import { saveFlightSession, getFlightSession, clearFlightSession } from '@/lib/flight-session';
 import { ChatPanel } from '@/components/chat/chat-panel';
 import { ChatProvider } from '@/components/chat/chat-context';
 import { LogbookPanel } from '@/components/logbook/logbook-panel';
@@ -20,6 +21,7 @@ import {
   FastForward,
   Coins,
   Plane,
+  PlaneTakeoff,
 } from 'lucide-react';
 
 const FlightGlobe = dynamic(
@@ -56,16 +58,17 @@ const MOBILE_TABS: { id: MobileTab; label: string; icon: ReactNode }[] = [
 ];
 
 export function Dashboard() {
+  const [session] = useState(() => getFlightSession());
   const [activeTab, setActiveTab] = useState<MobileTab>('flight');
-  const [flight, setFlight] = useState<FlightData | null>(null);
+  const [flight, setFlight] = useState<FlightData | null>(session?.flight ?? null);
   const [planeModel, setPlaneModel] = useState<'default' | 'glurak' | 'duck'>(
     'default',
   );
-  const [demoLanded, setDemoLanded] = useState(false);
-  const [logbookEntries, setLogbookEntries] = useState<LogbookEntry[]>([]);
-  const [earnings, setEarnings] = useState(0);
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const flightSavedRef = useRef(false);
+  const [demoLanded, setDemoLanded] = useState(session?.demoLanded ?? false);
+  const [logbookEntries, setLogbookEntries] = useState<LogbookEntry[]>(session?.logbookEntries ?? []);
+  const [earnings, setEarnings] = useState(session?.earnings ?? 0);
+  const [achievements, setAchievements] = useState<Achievement[]>(session?.achievements ?? []);
+  const flightSavedRef = useRef(session?.flightSaved ?? false);
 
   const triggerDemo = useCallback(() => {
     if (!flight) return;
@@ -125,13 +128,29 @@ export function Dashboard() {
     setFlight(selectedFlight);
     setDemoLanded(false);
     setLogbookEntries([]);
+    setAchievements([]);
+    setEarnings(0);
     setActiveTab('flight');
     flightSavedRef.current = false;
   }, []);
 
+  const handleNewFlight = useCallback(() => {
+    setFlight(null);
+    setDemoLanded(false);
+    setLogbookEntries([]);
+    setAchievements([]);
+    setEarnings(0);
+    setActiveTab('chat');
+    flightSavedRef.current = false;
+    clearFlightSession();
+  }, []);
+
   const handleStoryComplete = useCallback(
     (sections: StorySection[]) => {
-      if (!flight || flightSavedRef.current) return;
+      if (!flight || flightSavedRef.current) {
+        console.warn('[Hans] handleStoryComplete skipped:', { hasFlight: !!flight, alreadySaved: flightSavedRef.current });
+        return;
+      }
       flightSavedRef.current = true;
 
       const moods = logbookEntries.map((e) => e.mood);
@@ -144,6 +163,7 @@ export function Dashboard() {
         .filter((a) => a.unlockedAt)
         .map((a) => a.id);
 
+      console.log('[Hans] Saving flight:', { flightNumber: flight.flightNumber, entries: logbookEntries.length, achievements: unlockedIds.length, sections: sections.length });
       saveCompletedFlight({
         flightNumber: flight.flightNumber,
         airline: flight.airline,
@@ -168,6 +188,18 @@ export function Dashboard() {
     setAchievements(achs);
   }, []);
 
+  // Persist session state so it survives navigation to /flights and back
+  useEffect(() => {
+    saveFlightSession({
+      flight,
+      demoLanded,
+      logbookEntries,
+      achievements,
+      earnings,
+      flightSaved: flightSavedRef.current,
+    });
+  }, [flight, demoLanded, logbookEntries, achievements, earnings]);
+
   return (
     <ChatProvider>
       <div className="flex h-screen flex-col overflow-hidden bg-background font-sans">
@@ -189,6 +221,15 @@ export function Dashboard() {
                   <Plane className="h-3 w-3" />
                   My Flights
                 </Link>
+                {flight && (
+                  <button
+                    onClick={handleNewFlight}
+                    className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary/15 hover:text-primary"
+                  >
+                    <PlaneTakeoff className="h-3 w-3" />
+                    New Flight
+                  </button>
+                )}
                 {earnings > 0 && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-chart-4/15 px-2.5 py-1 text-xs font-semibold text-chart-4">
                     <Coins className="h-3.5 w-3.5" />
@@ -292,8 +333,10 @@ export function Dashboard() {
             {/* Bottom: Achievements */}
             <div className="shrink-0 border-t border-border">
               <AchievementsStrip
+                key={flight?.id}
                 demoLanded={demoLanded}
                 logbookEntries={logbookEntries}
+                initialAchievements={achievements}
                 onEarningsChange={setEarnings}
                 onAchievementsChange={handleAchievementsChange}
               />
@@ -301,7 +344,7 @@ export function Dashboard() {
           </div>
 
           {/* Chat Sidebar — desktop */}
-          <div className="border-l border-border">
+          <div className="overflow-hidden border-l border-border">
             <ChatPanel
               flight={flight}
               onFlightSelected={handleFlightSelected}
@@ -401,9 +444,11 @@ export function Dashboard() {
               )}
             >
               <AchievementsStrip
+                key={flight?.id}
                 fullView
                 demoLanded={demoLanded}
                 logbookEntries={logbookEntries}
+                initialAchievements={achievements}
                 onEarningsChange={setEarnings}
                 onAchievementsChange={handleAchievementsChange}
               />

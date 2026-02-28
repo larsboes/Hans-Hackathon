@@ -14,6 +14,7 @@ interface AchievementsStripProps {
   fullView?: boolean
   demoLanded?: boolean
   logbookEntries?: LogbookEntry[]
+  initialAchievements?: Achievement[]
   onEarningsChange?: (euros: number) => void
   onAchievementsChange?: (achievements: Achievement[]) => void
 }
@@ -24,17 +25,21 @@ function calcEarnings(list: Achievement[]): number {
     .reduce((sum, a) => sum + (a.secret ? 2 : 0.5), 0)
 }
 
-export function AchievementsStrip({ fullView = false, demoLanded = false, logbookEntries = [], onEarningsChange, onAchievementsChange }: AchievementsStripProps) {
+export function AchievementsStrip({ fullView = false, demoLanded = false, logbookEntries = [], initialAchievements, onEarningsChange, onAchievementsChange }: AchievementsStripProps) {
   const [achievements, setAchievements] = useState<Achievement[]>(
-    ACHIEVEMENTS.map((a) => ({
-      ...a,
-      // Achievements unlock after flight — all locked during flight
-      unlockedAt: undefined,
-      collected: false,
-    }))
+    initialAchievements && initialAchievements.length > 0
+      ? initialAchievements
+      : ACHIEVEMENTS.map((a) => ({
+          ...a,
+          unlockedAt: undefined,
+          collected: false,
+        }))
   )
   const [showLibrary, setShowLibrary] = useState(false)
-  const [demoApplied, setDemoApplied] = useState(false)
+  const [demoApplied, setDemoApplied] = useState(
+    // If restoring with already-unlocked achievements, skip re-matching
+    initialAchievements?.some((a) => a.unlockedAt) ?? false
+  )
   const [popupQueue, setPopupQueue] = useState<Achievement[]>([])
 
   // When demo landing triggers, analyze logbook entries to unlock matching achievements
