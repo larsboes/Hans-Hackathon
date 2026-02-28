@@ -258,6 +258,9 @@ export function Dashboard() {
                       {demoLanded ? 'Landed' : 'In Flight'}
                     </span>
                     {!demoLanded && (
+                      <FlightInfo flight={flight} />
+                    )}
+                    {!demoLanded && (
                       <button
                         onClick={triggerDemo}
                         className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary/15 hover:text-primary"
