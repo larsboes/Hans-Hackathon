@@ -1,5 +1,6 @@
 import { streamText, convertToModelMessages, stepCountIs } from 'ai';
 import { google, GEMINI_MODEL } from '@/lib/google-model';
+import { type GoogleLanguageModelOptions } from '@ai-sdk/google';
 import { lufthansaTools } from '@/lib/lufthansa-tools';
 
 export async function POST(req: Request) {
@@ -8,10 +9,18 @@ export async function POST(req: Request) {
   const flightContext = flight
     ? `The passenger is on ${flight.airline} flight ${flight.flightNumber} from ${flight.departure.city} (${flight.departure.code}) to ${flight.arrival.city} (${flight.arrival.code}) today (${new Date().toISOString().split('T')[0]}).
 Use the getFlightStatus tool with flightNumber "${flight.flightNumber}" and today's date to get real-time departure/arrival times, gates, terminals, delays, and status.`
-    : `The passenger has not selected a flight yet. Today is ${new Date().toISOString().split('T')[0]}.`
+    : `The passenger has not selected a flight yet. Today is ${new Date().toISOString().split('T')[0]}.`;
 
   const result = streamText({
     model: google(GEMINI_MODEL),
+    providerOptions: {
+      vertex: {
+        thinkingConfig: {
+          includeThoughts: false,
+          thinkingBudget: 0,
+        },
+      } satisfies GoogleLanguageModelOptions,
+    },
     system: `You are "Hans", a friendly and knowledgeable in-flight companion assistant for the "Hans" app.
 You help passengers with flight information, entertainment suggestions, travel tips, destination recommendations, and general conversation.
 ${flightContext}

@@ -1,25 +1,35 @@
-import { google, GEMINI_MODEL } from '@/lib/google-model'
-import { generateText } from 'ai'
-import type { FlightData, LogbookEntry, StorySection } from '@/lib/types'
+import { google, GEMINI_MODEL } from '@/lib/google-model';
+import { generateText } from 'ai';
+import { type GoogleLanguageModelOptions } from '@ai-sdk/google';
+import type { FlightData, LogbookEntry, StorySection } from '@/lib/types';
 
 export async function POST(req: Request) {
   const { flight, entries, achievements } = (await req.json()) as {
-    flight: FlightData
-    entries: LogbookEntry[]
-    achievements: string[]
-  }
+    flight: FlightData;
+    entries: LogbookEntry[];
+    achievements: string[];
+  };
 
   const entrySummary = entries
     .map((e) => `[${e.category}] ${e.content} (mood: ${e.mood}/5)`)
-    .join('\n')
+    .join('\n');
 
-  const achievementList = achievements.length > 0
-    ? `Achievements unlocked: ${achievements.join(', ')}`
-    : ''
+  const achievementList =
+    achievements.length > 0
+      ? `Achievements unlocked: ${achievements.join(', ')}`
+      : '';
 
   try {
     const result = await generateText({
       model: google(GEMINI_MODEL),
+      providerOptions: {
+        vertex: {
+          thinkingConfig: {
+            includeThoughts: false,
+            thinkingBudget: 0,
+          },
+        } satisfies GoogleLanguageModelOptions,
+      },
       prompt: `Given this flight data and passenger logbook, create a 3-section travel story.
 
 Flight: ${flight.airline} ${flight.flightNumber} from ${flight.departure.city} (${flight.departure.code}) to ${flight.arrival.city} (${flight.arrival.code})
@@ -42,15 +52,21 @@ Section themes:
 3. Landing - arrival and looking forward
 
 Return ONLY the JSON array, no markdown fences.`,
-      system: 'You are a travel storyteller. You create warm, personal narratives from flight data and logbook entries. Always return valid JSON.',
-    })
+      system:
+        'You are a travel storyteller. You create warm, personal narratives from flight data and logbook entries. Always return valid JSON.',
+    });
 
-    const cleaned = result.text.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
-    const sections: StorySection[] = JSON.parse(cleaned)
+    const cleaned = result.text
+      .replace(/^```(?:json)?\s*/, '')
+      .replace(/\s*```$/, '');
+    const sections: StorySection[] = JSON.parse(cleaned);
 
-    return Response.json({ sections })
+    return Response.json({ sections });
   } catch (error) {
-    console.error('Error generating story:', error)
-    return Response.json({ error: 'Failed to generate story' }, { status: 500 })
+    console.error('Error generating story:', error);
+    return Response.json(
+      { error: 'Failed to generate story' },
+      { status: 500 },
+    );
   }
 }
