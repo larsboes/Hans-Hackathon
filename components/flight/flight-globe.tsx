@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import {
   APIProvider,
   GestureHandling,
@@ -26,13 +26,34 @@ const GOOGLE_MAPS_API_KEY = 'AIzaSyBlr5NkfAp84YskenrxJbi3_HNQcUsYdcE';
 
 /* ── 3D model configs ────────────────────────────────────── */
 
-const MODEL_3D_CONFIG: Record<PlaneModel, { src: string; scale: number; tilt: number; headingOffset: number }> = {
-  default: { src: '/api/model/plane.glb', scale: 250, tilt: -90, headingOffset: 180 },
-  glurak: { src: '/assets/3d/glurak.glb', scale: 80_000, tilt: -90, headingOffset: 180 },
-  duck: { src: '/assets/3d/duck.glb', scale: 80_000, tilt: -90, headingOffset: 270 },
+const MODEL_3D_CONFIG: Record<
+  PlaneModel,
+  { src: string; scale: number; tilt: number; headingOffset: number }
+> = {
+  default: {
+    src: '/api/model/plane.glb',
+    scale: 250,
+    tilt: -90,
+    headingOffset: 180,
+  },
+  glurak: {
+    src: '/assets/3d/glurak.glb',
+    scale: 80_000,
+    tilt: -90,
+    headingOffset: 180,
+  },
+  duck: {
+    src: '/assets/3d/duck.glb',
+    scale: 80_000,
+    tilt: -90,
+    headingOffset: 270,
+  },
 };
 
-const MODEL_LABELS: Record<PlaneModel, { label: string; icon: 'flame' | 'bird' | 'plane' }> = {
+const MODEL_LABELS: Record<
+  PlaneModel,
+  { label: string; icon: 'flame' | 'bird' | 'plane' }
+> = {
   default: { label: 'Plane', icon: 'plane' },
   glurak: { label: 'Glurak', icon: 'flame' },
   duck: { label: 'Duck', icon: 'bird' },
@@ -58,6 +79,27 @@ function getHeadingDegrees(
   return (bearing + 360) % 360;
 }
 
+function getFlightDistanceMeters(flight: FlightData): number {
+  const EARTH_RADIUS_METERS = 6_371_000;
+  const toRad = (value: number) => (value * Math.PI) / 180;
+
+  const lat1 = toRad(flight.departure.lat);
+  const lat2 = toRad(flight.arrival.lat);
+  const deltaLat = toRad(flight.arrival.lat - flight.departure.lat);
+  const deltaLng = toRad(flight.arrival.lng - flight.departure.lng);
+
+  const a =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.cos(lat1) *
+      Math.cos(lat2) *
+      Math.sin(deltaLng / 2) *
+      Math.sin(deltaLng / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return EARTH_RADIUS_METERS * c;
+}
+
 /* ── Map sub-components ──────────────────────────────────── */
 
 interface FlightMap3DProps {
@@ -75,13 +117,21 @@ function FlightMap3D({ flight, planeModel }: FlightMap3DProps) {
     [flight],
   );
 
+  const cameraRange = useMemo(() => {
+    const MIN_RANGE = 4_500_000;
+    const MAX_RANGE = 12_000_000;
+    const distanceRange = getFlightDistanceMeters(flight) * 1.4;
+    return Math.max(MIN_RANGE, Math.min(MAX_RANGE, distanceRange));
+  }, [flight]);
+
   return (
     <Map3D
+      key={flight.id}
       defaultCenter={center}
       defaultHeading={0}
       defaultTilt={45}
       defaultRoll={0}
-      defaultRange={4_000_000}
+      defaultRange={cameraRange}
       mode={MapMode.SATELLITE}
       gestureHandling={GestureHandling.GREEDY}
       className="h-full w-full"
@@ -117,23 +167,6 @@ function FlightMap3D({ flight, planeModel }: FlightMap3DProps) {
   );
 }
 
-function useFlightPosition(flight: FlightData) {
-  const [position, setPosition] = useState(() => {
-    const [lat, lng] = getCurrentPosition(flight);
-    return { lat, lng };
-  });
-
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      const [lat, lng] = getCurrentPosition(flight);
-      setPosition({ lat, lng });
-    }, 30_000);
-    return () => window.clearInterval(interval);
-  }, [flight]);
-
-  return position;
-}
-
 /** 3D .glb model placed on the map via Model3DElement */
 function Model3DMarker({
   flight,
@@ -150,16 +183,28 @@ function Model3DMarker({
 }) {
   const map3d = useMap3D();
   const modelRef = useRef<any>(null);
-  const position = useFlightPosition(flight);
+  const headingOffsetRef = useRef(headingOffset);
+  const tiltRef = useRef(tilt);
 
-  const heading = useMemo(
-    () =>
-      getHeadingDegrees(
-        { lat: position.lat, lng: position.lng },
-        { lat: flight.arrival.lat, lng: flight.arrival.lng },
-      ),
-    [position.lat, position.lng, flight.arrival.lat, flight.arrival.lng],
-  );
+  useEffect(() => {
+    headingOffsetRef.current = headingOffset;
+    tiltRef.current = tilt;
+
+    if (!modelRef.current) return;
+
+    const [lat, lng] = getCurrentPosition(flight);
+    const heading = getHeadingDegrees(
+      { lat, lng },
+      { lat: flight.arrival.lat, lng: flight.arrival.lng },
+    );
+
+    modelRef.current.position = { lat, lng, altitude: 350_000 };
+    modelRef.current.orientation = {
+      heading: (heading + headingOffsetRef.current) % 360,
+      tilt: tiltRef.current,
+      roll: 0,
+    };
+  }, [flight, headingOffset, tilt]);
 
   useEffect(() => {
     const googleMaps = (window as unknown as { google?: any }).google;
@@ -168,37 +213,54 @@ function Model3DMarker({
 
     if (!map3d || !Model3DElement) return;
 
+    const [initialLat, initialLng] = getCurrentPosition(flight);
+    const initialHeading = getHeadingDegrees(
+      { lat: initialLat, lng: initialLng },
+      { lat: flight.arrival.lat, lng: flight.arrival.lng },
+    );
+
     const model = new Model3DElement({
       src,
-      position: { lat: position.lat, lng: position.lng, altitude: 350_000 },
+      position: { lat: initialLat, lng: initialLng, altitude: 350_000 },
       altitudeMode: AltitudeMode.ABSOLUTE,
       scale,
-      orientation: { heading: (heading + headingOffset) % 360, tilt, roll: 0 },
+      orientation: {
+        heading: (initialHeading + headingOffsetRef.current) % 360,
+        tilt: tiltRef.current,
+        roll: 0,
+      },
     });
 
     map3d.append(model);
     modelRef.current = model;
 
+    const interval = window.setInterval(() => {
+      if (!modelRef.current) return;
+
+      const [lat, lng] = getCurrentPosition(flight);
+      const heading = getHeadingDegrees(
+        { lat, lng },
+        { lat: flight.arrival.lat, lng: flight.arrival.lng },
+      );
+
+      modelRef.current.position = { lat, lng, altitude: 350_000 };
+      modelRef.current.orientation = {
+        heading: (heading + headingOffsetRef.current) % 360,
+        tilt: tiltRef.current,
+        roll: 0,
+      };
+    }, 30_000);
+
     return () => {
+      window.clearInterval(interval);
       model.remove();
       if (modelRef.current === model) {
         modelRef.current = null;
       }
     };
-  // Only create/destroy when map or model source changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map3d, src]);
-
-  // Update position + heading when they change
-  useEffect(() => {
-    if (!modelRef.current) return;
-    modelRef.current.position = {
-      lat: position.lat,
-      lng: position.lng,
-      altitude: 350_000,
-    };
-    modelRef.current.orientation = { heading: (heading + headingOffset) % 360, tilt, roll: 0 };
-  }, [position.lat, position.lng, heading, headingOffset, tilt]);
+    // Only create/destroy when map or model source changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map3d, src, flight]);
 
   return null;
 }
@@ -314,7 +376,9 @@ export function FlightGlobe({
             ) : (
               <Flame className="h-3.5 w-3.5" />
             )}
-            {planeModel === 'default' ? 'Fun Mode' : MODEL_LABELS[planeModel].label + ' Mode'}
+            {planeModel === 'default'
+              ? 'Fun Mode'
+              : MODEL_LABELS[planeModel].label + ' Mode'}
           </Button>
         </div>
 
@@ -348,7 +412,9 @@ export function FlightGlobe({
           ) : (
             <Flame className="h-3.5 w-3.5" />
           )}
-          {planeModel === 'default' ? 'Fun Mode' : MODEL_LABELS[planeModel].label + ' Mode'}
+          {planeModel === 'default'
+            ? 'Fun Mode'
+            : MODEL_LABELS[planeModel].label + ' Mode'}
         </Button>
       </div>
 
