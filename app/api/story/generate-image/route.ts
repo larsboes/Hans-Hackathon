@@ -1,28 +1,17 @@
-import { google, GEMINI_MODEL } from '@/lib/google-model';
-import { generateText } from 'ai';
-import { type GoogleLanguageModelOptions } from '@ai-sdk/google';
+import { google } from '@/lib/google-model';
+import { generateImage } from 'ai';
 
 export async function POST(req: Request) {
   const { prompt } = await req.json();
 
   try {
-    const result = await generateText({
-      model: google(GEMINI_MODEL),
-      providerOptions: {
-        vertex: {
-          thinkingConfig: {
-            includeThoughts: false,
-            thinkingBudget: 0,
-          },
-        } satisfies GoogleLanguageModelOptions,
-        google: {
-          responseModalities: ['TEXT', 'IMAGE'],
-        },
-      },
-      prompt: `Generate a beautiful, atmospheric travel illustration. Scene: ${prompt}. Style: watercolor illustration, warm colors, dreamy travel photography feel, cinematic lighting.`,
+    const result = await generateImage({
+      model: google.image('gemini-3.1-flash-image-preview'),
+      prompt: `Generate one beautiful, atmospheric travel illustration for the entire journey. Scene: ${prompt}. Style: watercolor illustration, warm colors, dreamy travel photography feel, cinematic lighting.`,
+      aspectRatio: '16:9',
     });
 
-    const imageFile = result.files?.[0];
+    const imageFile = result.image;
     if (imageFile) {
       return Response.json({
         imageUrl: `data:${imageFile.mediaType};base64,${imageFile.base64}`,

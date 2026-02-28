@@ -19,6 +19,7 @@ function SkeletonBlock({ className }: { className?: string }) {
 
 export function FlightStory({ flight, entries, onStoryComplete }: FlightStoryProps) {
   const [sections, setSections] = useState<StorySection[]>([])
+  const [journeyImageUrl, setJourneyImageUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const storyCompleteCalledRef = useRef(false)
@@ -52,35 +53,29 @@ export function FlightStory({ flight, entries, onStoryComplete }: FlightStoryPro
           onStoryComplete(storySections)
         }
 
-        // Step 2: Generate images in parallel
-        const imagePromises = storySections.map(
-          async (section: StorySection, index: number) => {
-            try {
-              const imgRes = await fetch('/api/story/generate-image', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: section.imagePrompt }),
-              })
+        // Step 2: Generate one image for the entire journey
+        try {
+          const journeyPrompt = [
+            `${flight.airline} ${flight.flightNumber}`,
+            `${flight.departure.city} (${flight.departure.code}) to ${flight.arrival.city} (${flight.arrival.code})`,
+            storySections.map((section: StorySection) => section.imagePrompt).join('. '),
+          ].join('. ')
 
-              if (!imgRes.ok) return null
-
-              const { imageUrl } = await imgRes.json()
-              return { index, imageUrl }
-            } catch {
-              return null
-            }
-          }
-        )
-
-        const results = await Promise.all(imagePromises)
-        if (cancelled) return
-
-        setSections((prev) =>
-          prev.map((s, i) => {
-            const result = results.find((r) => r?.index === i)
-            return result?.imageUrl ? { ...s, imageUrl: result.imageUrl } : s
+          const imgRes = await fetch('/api/story/generate-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: journeyPrompt }),
           })
-        )
+
+          if (!imgRes.ok || cancelled) return
+
+          const { imageUrl } = await imgRes.json()
+          if (imageUrl) {
+            setJourneyImageUrl(imageUrl)
+          }
+        } catch {
+          // Non-blocking: story text should still render without image
+        }
       } catch (err) {
         if (!cancelled) {
           setError('Could not generate story.')
@@ -114,6 +109,18 @@ export function FlightStory({ flight, entries, onStoryComplete }: FlightStoryPro
         </span>
       </div>
 
+      {!loading && (
+        journeyImageUrl ? (
+          <img
+            src={journeyImageUrl}
+            alt="Journey illustration"
+            className="h-44 w-full rounded-lg object-cover"
+          />
+        ) : (
+          <SkeletonBlock className="h-44 w-full rounded-lg" />
+        )
+      )}
+
       {/* Sections */}
       {loading ? (
         <div className="flex flex-col gap-4">
@@ -133,17 +140,6 @@ export function FlightStory({ flight, entries, onStoryComplete }: FlightStoryPro
               <h4 className="text-xs font-semibold uppercase tracking-wide text-primary">
                 {section.title}
               </h4>
-
-              {/* Image */}
-              {section.imageUrl ? (
-                <img
-                  src={section.imageUrl}
-                  alt={section.title}
-                  className="h-36 w-full rounded-lg object-cover"
-                />
-              ) : (
-                <SkeletonBlock className="h-36 w-full rounded-lg" />
-              )}
 
               {/* Text */}
               <p className="text-sm leading-relaxed text-muted-foreground">
