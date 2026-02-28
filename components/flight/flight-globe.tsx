@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from 'react';
 import {
   APIProvider,
   GestureHandling,
@@ -8,11 +8,11 @@ import {
   MapMode,
   Marker3D,
   useMap3D,
-} from "@vis.gl/react-google-maps";
-import type { FlightData } from "@/lib/types";
-import { getCurrentPosition } from "@/lib/flight-data";
-import { AlertCircle, Flame } from "lucide-react";
-import { Button } from "@/components/ui/button";
+} from '@vis.gl/react-google-maps';
+import type { FlightData } from '@/lib/types';
+import { getCurrentPosition } from '@/lib/flight-data';
+import { AlertCircle, Flame } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface FlightGlobeProps {
   flight: FlightData;
@@ -20,7 +20,7 @@ interface FlightGlobeProps {
   onToggleCharizard: () => void;
 }
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyBlr5NkfAp84YskenrxJbi3_HNQcUsYdcE";
+const GOOGLE_MAPS_API_KEY = 'AIzaSyBlr5NkfAp84YskenrxJbi3_HNQcUsYdcE';
 
 interface FlightMap3DProps {
   flight: FlightData;
@@ -103,7 +103,7 @@ function MovingFlightMarker({
   return (
     <Marker3D
       position={{ lat: position.lat, lng: position.lng, altitude: 200_000 }}
-      label={charizardMode ? "🔥" : "✈️"}
+      label={charizardMode ? '🔥' : '✈️'}
       sizePreserved
       drawsWhenOccluded
     />
@@ -131,9 +131,9 @@ function FlightRoute({ flight }: { flight: FlightData }) {
       geodesic: true,
       drawsOccludedSegments: true,
       zIndex: 9999,
-      strokeColor: "#ff00ff",
+      strokeColor: '#ff00ff',
       strokeWidth: 12,
-      outerColor: "#111111",
+      outerColor: '#111111',
       outerWidth: 0.5,
     });
 
@@ -172,13 +172,13 @@ export function FlightGlobe({
 
         <div className="absolute bottom-4 right-4 z-10">
           <Button
-            variant={charizardMode ? "default" : "secondary"}
+            variant={charizardMode ? 'default' : 'secondary'}
             size="sm"
             onClick={onToggleCharizard}
             className="gap-1.5 text-xs"
           >
             <Flame className="h-3.5 w-3.5" />
-            {charizardMode ? "Glurak Mode ON" : "Glurak Mode"}
+            {charizardMode ? 'Glurak Mode ON' : 'Glurak Mode'}
           </Button>
         </div>
 
@@ -200,13 +200,13 @@ export function FlightGlobe({
 
       <div className="absolute bottom-4 right-4 z-10">
         <Button
-          variant={charizardMode ? "default" : "secondary"}
+          variant={charizardMode ? 'default' : 'secondary'}
           size="sm"
           onClick={onToggleCharizard}
           className="gap-1.5 text-xs"
         >
           <Flame className="h-3.5 w-3.5" />
-          {charizardMode ? "Glurak Mode ON" : "Glurak Mode"}
+          {charizardMode ? 'Glurak Mode ON' : 'Glurak Mode'}
         </Button>
       </div>
 
