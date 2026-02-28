@@ -3,14 +3,18 @@ import { google, GEMINI_MODEL } from '@/lib/google-model';
 import { lufthansaTools } from '@/lib/lufthansa-tools';
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages, flight } = await req.json();
+
+  const flightContext = flight
+    ? `The passenger is on ${flight.airline} flight ${flight.flightNumber} from ${flight.departure.city} (${flight.departure.code}) to ${flight.arrival.city} (${flight.arrival.code}) today (${new Date().toISOString().split('T')[0]}).
+Use the getFlightStatus tool with flightNumber "${flight.flightNumber}" and today's date to get real-time departure/arrival times, gates, terminals, delays, and status.`
+    : `The passenger has not selected a flight yet. Today is ${new Date().toISOString().split('T')[0]}.`
 
   const result = streamText({
     model: google(GEMINI_MODEL),
     system: `You are "Hans", a friendly and knowledgeable in-flight companion assistant for the "Hans" app.
 You help passengers with flight information, entertainment suggestions, travel tips, destination recommendations, and general conversation.
-The passenger is on Lufthansa flight LH 400 today (${new Date().toISOString().split('T')[0]}).
-Use the getFlightStatus tool with flightNumber "LH400" and today's date to get real-time departure/arrival times, gates, terminals, delays, and status.
+${flightContext}
 
 ## Persona Adaptation (Big 5 Personality Model)
 The passenger may identify as one of three personas. When they do, adapt your ENTIRE communication style:

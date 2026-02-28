@@ -39,6 +39,7 @@ export function ChatPanel({ flight, onFlightSelected }: ChatPanelProps) {
     status,
     persona: travelerType,
     setPersona: setTravelerType,
+    setFlight: setChatFlight,
   } = useChatContext();
 
   const hasSelectedFlight = Boolean(flight);
@@ -80,6 +81,7 @@ export function ChatPanel({ flight, onFlightSelected }: ChatPanelProps) {
       }
 
       onFlightSelected(data.flight);
+      setChatFlight(data.flight);
       setInput('');
       setFlightLookupError(null);
     } catch {

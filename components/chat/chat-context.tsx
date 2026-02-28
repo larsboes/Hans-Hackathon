@@ -1,26 +1,35 @@
 'use client'
 
-import { createContext, useContext, useMemo, useState, useCallback } from 'react'
+import { createContext, useContext, useMemo, useState, useCallback, useRef } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
-import type { TravelerType } from '@/lib/types'
+import type { FlightData, TravelerType } from '@/lib/types'
 
 type ChatContextValue = ReturnType<typeof useChat> & {
   persona: TravelerType | null
   setPersona: (type: TravelerType) => void
+  setFlight: (flight: FlightData) => void
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null)
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [persona, setPersonaState] = useState<TravelerType | null>(null)
+  const flightRef = useRef<FlightData | null>(null)
 
   const transport = useMemo(
-    () => new DefaultChatTransport({ api: '/api/chat' }),
+    () => new DefaultChatTransport({
+      api: '/api/chat',
+      body: () => (flightRef.current ? { flight: flightRef.current } : {}),
+    }),
     []
   )
 
   const chat = useChat({ transport })
+
+  const setFlight = useCallback((f: FlightData) => {
+    flightRef.current = f
+  }, [])
 
   const setPersona = useCallback((type: TravelerType) => {
     setPersonaState(type)
@@ -36,8 +45,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   }, [chat])
 
   const value = useMemo(
-    () => ({ ...chat, persona, setPersona }),
-    [chat, persona, setPersona]
+    () => ({ ...chat, persona, setPersona, setFlight }),
+    [chat, persona, setPersona, setFlight]
   )
 
   return <ChatContext value={value}>{children}</ChatContext>
