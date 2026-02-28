@@ -26,10 +26,10 @@ const GOOGLE_MAPS_API_KEY = 'AIzaSyBlr5NkfAp84YskenrxJbi3_HNQcUsYdcE';
 
 /* ── 3D model configs ────────────────────────────────────── */
 
-const MODEL_3D_CONFIG: Record<PlaneModel, { src: string; scale: number; tilt: number }> = {
-  default: { src: '/api/model/plane.glb', scale: 250, tilt: -90 },
-  glurak: { src: '/assets/3d/glurak.glb', scale: 80_000, tilt: 0 },
-  duck: { src: '/assets/3d/duck.glb', scale: 80_000, tilt: 0 },
+const MODEL_3D_CONFIG: Record<PlaneModel, { src: string; scale: number; tilt: number; headingOffset: number }> = {
+  default: { src: '/api/model/plane.glb', scale: 250, tilt: -90, headingOffset: 180 },
+  glurak: { src: '/assets/3d/glurak.glb', scale: 80_000, tilt: -90, headingOffset: 180 },
+  duck: { src: '/assets/3d/duck.glb', scale: 80_000, tilt: -90, headingOffset: 270 },
 };
 
 const MODEL_LABELS: Record<PlaneModel, { label: string; icon: 'flame' | 'bird' | 'plane' }> = {
@@ -94,7 +94,7 @@ function FlightMap3D({ flight, planeModel }: FlightMap3DProps) {
           lng: flight.departure.lng,
           altitude: 150_000,
         }}
-        label={`🛫 ${flight.departure.code}`}
+        label={flight.departure.code}
         title={`${flight.departure.city} (${flight.departure.code})`}
         sizePreserved
         drawsWhenOccluded
@@ -106,7 +106,7 @@ function FlightMap3D({ flight, planeModel }: FlightMap3DProps) {
           lng: flight.arrival.lng,
           altitude: 150_000,
         }}
-        label={`🛬 ${flight.arrival.code}`}
+        label={flight.arrival.code}
         title={`${flight.arrival.city} (${flight.arrival.code})`}
         sizePreserved
         drawsWhenOccluded
@@ -140,11 +140,13 @@ function Model3DMarker({
   src,
   scale,
   tilt,
+  headingOffset,
 }: {
   flight: FlightData;
   src: string;
   scale: number;
   tilt: number;
+  headingOffset: number;
 }) {
   const map3d = useMap3D();
   const modelRef = useRef<any>(null);
@@ -171,7 +173,7 @@ function Model3DMarker({
       position: { lat: position.lat, lng: position.lng, altitude: 350_000 },
       altitudeMode: AltitudeMode.ABSOLUTE,
       scale,
-      orientation: { heading, tilt, roll: 0 },
+      orientation: { heading: (heading + headingOffset) % 360, tilt, roll: 0 },
     });
 
     map3d.append(model);
@@ -195,8 +197,8 @@ function Model3DMarker({
       lng: position.lng,
       altitude: 350_000,
     };
-    modelRef.current.orientation = { heading, tilt, roll: 0 };
-  }, [position.lat, position.lng, heading, tilt]);
+    modelRef.current.orientation = { heading: (heading + headingOffset) % 360, tilt, roll: 0 };
+  }, [position.lat, position.lng, heading, headingOffset, tilt]);
 
   return null;
 }
@@ -215,6 +217,7 @@ function MovingFlightMarker({
       src={config.src}
       scale={config.scale}
       tilt={config.tilt}
+      headingOffset={config.headingOffset}
     />
   );
 }

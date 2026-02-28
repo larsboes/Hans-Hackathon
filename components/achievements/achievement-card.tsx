@@ -71,24 +71,27 @@ export function AchievementCard({
   async function handleCollect() {
     if (!isUnlocked || isCollected) return
 
-    setGenerating(true)
-    try {
-      const response = await fetch('/api/achievements/generate-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: achievement.imagePrompt,
-          achievementName: achievement.name,
-        }),
-      })
-      const data = await response.json()
-      if (data.imageUrl) {
-        onImageGenerated(achievement.id, data.imageUrl)
+    // Skip image generation if the achievement already has an image
+    if (!achievement.imageUrl) {
+      setGenerating(true)
+      try {
+        const response = await fetch('/api/achievements/generate-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: achievement.imagePrompt,
+            achievementName: achievement.name,
+          }),
+        })
+        const data = await response.json()
+        if (data.imageUrl) {
+          onImageGenerated(achievement.id, data.imageUrl)
+        }
+      } catch (error) {
+        console.error('Failed to generate image:', error)
       }
-    } catch (error) {
-      console.error('Failed to generate image:', error)
+      setGenerating(false)
     }
-    setGenerating(false)
     onCollect(achievement.id)
   }
 
