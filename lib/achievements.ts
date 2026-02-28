@@ -12,44 +12,39 @@ export function matchAchievements(entries: LogbookEntry[]): string[] {
     categoryCounts[entry.category] = (categoryCounts[entry.category] || 0) + 1
     const text = entry.content.toLowerCase()
 
-    // Crew entries
-    if (entry.category === 'crew') {
-      unlocked.add('crew-interaction') // Kudos Giver
-      // Secret: multiple crew entries or very positive
+    // Crew — by category OR by keywords in any entry
+    if (entry.category === 'crew' || text.match(/crew|attendant|steward|friendly|kind|nice|helpful|service/)) {
+      unlocked.add('crew-interaction')
       if (entry.mood >= 5 || (categoryCounts['crew'] ?? 0) >= 2) {
         unlocked.add('crew-favorite')
       }
     }
 
-    // Seat entries
-    if (entry.category === 'seat') {
-      if (text.match(/window|view|cloud|sunset|sunrise|sky/)) {
-        unlocked.add('cloud-lover') // Window seat lover
-      }
-      if (text.match(/aisle|legroom|stretch|move/)) {
-        unlocked.add('aisle-runner')
-      }
-      if (text.match(/cockpit|captain|pilot/)) {
-        unlocked.add('seat-achievement')
-      }
+    // Cockpit / seat — by category OR by keywords
+    if (text.match(/cockpit|captain|pilot/)) {
+      unlocked.add('seat-achievement')
+    }
+    if (text.match(/window|view|cloud|sunset|sunrise|sky/)) {
+      unlocked.add('cloud-lover')
+    }
+    if (text.match(/aisle|legroom|stretch|move/)) {
+      unlocked.add('aisle-runner')
     }
 
-    // Delay entries
-    if (entry.category === 'delay') {
-      unlocked.add('delay-achievement') // Master of Patience
+    // Delay — by category OR by keywords
+    if (entry.category === 'delay' || text.match(/delay|wait|late|cancel/)) {
+      unlocked.add('delay-achievement')
     }
 
-    // Experience entries
-    if (entry.category === 'experience') {
-      if (text.match(/photo|picture|capture|cloud|view|sunrise|sunset|beautiful/)) {
-        unlocked.add('cloud-capture')
-      }
-      if (text.match(/carry-on|backpack|light|minimal/)) {
-        unlocked.add('light-traveler')
-      }
-      if (text.match(/check.?in|boarding pass|online|app/)) {
-        unlocked.add('blitz-boarder')
-      }
+    // Experience — always check keywords regardless of category
+    if (text.match(/photo|picture|capture|cloud|view|sunrise|sunset|beautiful/)) {
+      unlocked.add('cloud-capture')
+    }
+    if (text.match(/carry-on|backpack|light|minimal/)) {
+      unlocked.add('light-traveler')
+    }
+    if (text.match(/check.?in|boarding pass|online|app/)) {
+      unlocked.add('blitz-boarder')
     }
   }
 
