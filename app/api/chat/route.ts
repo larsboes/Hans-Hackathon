@@ -1,15 +1,14 @@
-import { streamText, convertToModelMessages, stepCountIs } from 'ai'
-import { google } from '@/lib/google-model'
-import { lufthansaTools } from '@/lib/lufthansa-tools'
+import { streamText, convertToModelMessages, stepCountIs } from 'ai';
+import { google } from '@/lib/google-model';
+import { lufthansaTools } from '@/lib/lufthansa-tools';
 
 export async function POST(req: Request) {
-  const { messages } = await req.json()
+  const { messages } = await req.json();
 
   const result = streamText({
     model: google('gemini-3-flash-preview'),
     system: `You are "Hans", a friendly and knowledgeable in-flight companion assistant for the "Impeccable Quail" app.
 You help passengers with flight information, entertainment suggestions, travel tips, destination recommendations, and general conversation.
-The current flight is Lufthansa LH 400 from Frankfurt (FRA) to New York JFK.
 Today's date is ${new Date().toISOString().split('T')[0]}.
 
 ## Persona Adaptation (Big 5 Personality Model)
@@ -59,7 +58,7 @@ When you get an aircraft code from flight status, automatically look up the airc
     tools: lufthansaTools,
     stopWhen: stepCountIs(5),
     messages: await convertToModelMessages(messages),
-  })
+  });
 
-  return result.toUIMessageStreamResponse()
+  return result.toUIMessageStreamResponse();
 }
