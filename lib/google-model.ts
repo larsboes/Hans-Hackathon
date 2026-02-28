@@ -1,7 +1,7 @@
 import { createVertex } from '@ai-sdk/google-vertex';
 import { proxyFetch } from './proxy-fetch';
 
-export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? 'gemini-2.0-flash';
+export const GEMINI_MODEL = 'gemini-3-flash-preview';
 
 const vertexProject = process.env.VERTEX_PROJECT;
 const vertexLocation = process.env.VERTEX_LOCATION ?? 'global';
