@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, useCallback, useRef, type ReactNode } from 'react';
+import { useState, useCallback, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
-import type { FlightData, LogbookEntry, Achievement, StorySection } from '@/lib/types';
-import { saveCompletedFlight } from '@/lib/firebase-db';
+import type { FlightData, LogbookEntry } from '@/lib/types';
 import { ChatPanel } from '@/components/chat/chat-panel';
 import { ChatProvider } from '@/components/chat/chat-context';
 import { LogbookPanel } from '@/components/logbook/logbook-panel';
@@ -20,7 +18,6 @@ import {
   Loader2,
   FastForward,
   Coins,
-  Plane,
 } from 'lucide-react';
 
 const FlightGlobe = dynamic(
@@ -65,8 +62,6 @@ export function Dashboard() {
   const [demoLanded, setDemoLanded] = useState(false);
   const [logbookEntries, setLogbookEntries] = useState<LogbookEntry[]>([]);
   const [earnings, setEarnings] = useState(0);
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const flightSavedRef = useRef(false);
 
   const triggerDemo = useCallback(() => {
     if (!flight) return;
@@ -123,46 +118,6 @@ export function Dashboard() {
     setDemoLanded(false);
     setLogbookEntries([]);
     setActiveTab('flight');
-    flightSavedRef.current = false;
-  }, []);
-
-  const handleStoryComplete = useCallback(
-    (sections: StorySection[]) => {
-      if (!flight || flightSavedRef.current) return;
-      flightSavedRef.current = true;
-
-      const moods = logbookEntries.map((e) => e.mood);
-      const averageMood =
-        moods.length > 0
-          ? moods.reduce((a, b) => a + b, 0) / moods.length
-          : 0;
-
-      const unlockedIds = achievements
-        .filter((a) => a.unlockedAt)
-        .map((a) => a.id);
-
-      saveCompletedFlight({
-        flightNumber: flight.flightNumber,
-        airline: flight.airline,
-        departure: flight.departure,
-        arrival: flight.arrival,
-        departureTime: flight.departureTime,
-        arrivalTime: flight.arrivalTime,
-        storySections: sections.map(({ title, text, imagePrompt }) => ({
-          title,
-          text,
-          imagePrompt,
-        })),
-        achievementIds: unlockedIds,
-        logbookEntries,
-        averageMood: Math.round(averageMood * 10) / 10,
-      });
-    },
-    [flight, logbookEntries, achievements],
-  );
-
-  const handleAchievementsChange = useCallback((achs: Achievement[]) => {
-    setAchievements(achs);
   }, []);
 
   return (
@@ -186,13 +141,6 @@ export function Dashboard() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Link
-              href="/flights"
-              className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary/15 hover:text-primary"
-            >
-              <Plane className="h-3 w-3" />
-              My Flights
-            </Link>
             {earnings > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-chart-4/15 px-2.5 py-1 text-xs font-semibold text-chart-4">
                 <Coins className="h-3.5 w-3.5" />
@@ -257,7 +205,6 @@ export function Dashboard() {
                     onDeleteEntry={deleteLogbookEntry}
                     hasLanded={demoLanded}
                     flight={flight}
-                    onStoryComplete={handleStoryComplete}
                   />
                 </div>
 
@@ -297,7 +244,6 @@ export function Dashboard() {
                 demoLanded={demoLanded}
                 logbookEntries={logbookEntries}
                 onEarningsChange={setEarnings}
-                onAchievementsChange={handleAchievementsChange}
               />
             </div>
           </div>
@@ -375,7 +321,6 @@ export function Dashboard() {
                   onDeleteEntry={deleteLogbookEntry}
                   hasLanded={demoLanded}
                   flight={flight}
-                  onStoryComplete={handleStoryComplete}
                 />
               ) : (
                 <div className="flex h-full items-center justify-center p-6 text-center">
@@ -407,7 +352,6 @@ export function Dashboard() {
                 demoLanded={demoLanded}
                 logbookEntries={logbookEntries}
                 onEarningsChange={setEarnings}
-                onAchievementsChange={handleAchievementsChange}
               />
             </div>
           </div>

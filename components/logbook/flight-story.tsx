@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import type { FlightData, LogbookEntry, StorySection } from '@/lib/types'
 import { Plane } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -8,7 +8,6 @@ import { cn } from '@/lib/utils'
 interface FlightStoryProps {
   flight: FlightData
   entries: LogbookEntry[]
-  onStoryComplete?: (sections: StorySection[]) => void
 }
 
 function SkeletonBlock({ className }: { className?: string }) {
@@ -17,11 +16,10 @@ function SkeletonBlock({ className }: { className?: string }) {
   )
 }
 
-export function FlightStory({ flight, entries, onStoryComplete }: FlightStoryProps) {
+export function FlightStory({ flight, entries }: FlightStoryProps) {
   const [sections, setSections] = useState<StorySection[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const storyCompleteCalledRef = useRef(false)
 
   useEffect(() => {
     let cancelled = false
@@ -46,11 +44,6 @@ export function FlightStory({ flight, entries, onStoryComplete }: FlightStoryPro
 
         setSections(storySections)
         setLoading(false)
-
-        if (!storyCompleteCalledRef.current && onStoryComplete) {
-          storyCompleteCalledRef.current = true
-          onStoryComplete(storySections)
-        }
 
         // Step 2: Generate images in parallel
         const imagePromises = storySections.map(

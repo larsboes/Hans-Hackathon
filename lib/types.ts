@@ -52,19 +52,4 @@ export interface StorySection {
   imageUrl?: string
 }
 
-export interface CompletedFlight {
-  id?: string
-  flightNumber: string
-  airline: string
-  departure: AirportInfo
-  arrival: AirportInfo
-  departureTime: string
-  arrivalTime: string
-  storySections: Omit<StorySection, 'imageUrl'>[]
-  achievementIds: string[]
-  logbookEntries: LogbookEntry[]
-  averageMood: number
-  savedAt?: string
-}
-
 export type TravelerType = 'enthusiast' | 'normalo' | 'nervous'
