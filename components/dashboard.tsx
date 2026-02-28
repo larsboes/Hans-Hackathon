@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, type ReactNode } from 'react'
+import { useState, useEffect, useCallback, type ReactNode } from 'react'
 import dynamic from 'next/dynamic'
 import { cn } from '@/lib/utils'
 import { createDemoFlight } from '@/lib/flight-data'
@@ -10,12 +10,12 @@ import { ChatProvider } from '@/components/chat/chat-context'
 import { LogbookPanel } from '@/components/logbook/logbook-panel'
 import { FlightInfo } from '@/components/flight/flight-info'
 import { AchievementsStrip } from '@/components/achievements/achievements-strip'
+import Image from 'next/image'
 import {
   MessageSquare,
   BookOpen,
   Trophy,
   Globe,
-  Plane,
   Loader2,
   FastForward,
 } from 'lucide-react'
@@ -82,10 +82,25 @@ const INITIAL_LOGBOOK_ENTRIES: LogbookEntry[] = [
 
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState<MobileTab>('flight')
-  const [flight] = useState<FlightData>(() => createDemoFlight())
+  const [flight, setFlight] = useState<FlightData>(() => createDemoFlight())
   const [planeModel, setPlaneModel] = useState<'default' | 'glurak' | 'duck'>('default')
   const [demoLanded, setDemoLanded] = useState(false)
   const [logbookEntries, setLogbookEntries] = useState<LogbookEntry[]>(INITIAL_LOGBOOK_ENTRIES)
+
+  // Fetch real flight data from Lufthansa API
+  useEffect(() => {
+    fetch('/api/flight/status')
+      .then((res) => {
+        if (!res.ok) throw new Error(`${res.status}`)
+        return res.json()
+      })
+      .then((data: FlightData) => {
+        setFlight(data)
+      })
+      .catch((err) => {
+        console.warn('Could not fetch live flight data, using demo:', err.message)
+      })
+  }, [])
 
   const addLogbookEntry = useCallback((entry: LogbookEntry) => {
     setLogbookEntries((prev) => [entry, ...prev])
@@ -101,9 +116,13 @@ export function Dashboard() {
         {/* Header */}
         <header className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3 lg:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Plane className="h-4 w-4 text-primary-foreground" />
-            </div>
+            <Image
+              src="/assets/Hans.png"
+              alt="Hans logo"
+              width={32}
+              height={32}
+              className="h-8 w-8 rounded-lg object-cover"
+            />
             <h1 className="text-lg font-semibold text-foreground">Impeccable Quail</h1>
             <span className="hidden rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary sm:inline-block">
               {flight.flightNumber}

@@ -10,7 +10,7 @@ import {
   useMap3D,
 } from '@vis.gl/react-google-maps';
 import type { FlightData } from '@/lib/types';
-import { getCurrentPosition } from '@/lib/flight-data';
+import { getCurrentPosition, interpolateGreatCircle } from '@/lib/flight-data';
 import { AlertCircle, Flame, Bird } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -225,11 +225,27 @@ function MovingFlightMarker({
 function FlightRoute({ flight }: { flight: FlightData }) {
   const map3d = useMap3D();
 
+  // Build an arc of points along the great circle, elevated like a real flight path
   const routePath = useMemo(() => {
-    return [
-      { lat: flight.departure.lat, lng: flight.departure.lng },
-      { lat: flight.arrival.lat, lng: flight.arrival.lng },
-    ];
+    const NUM_POINTS = 60;
+    const CRUISE_ALTITUDE = 350_000; // meters – matches the plane model altitude
+    const points: { lat: number; lng: number; altitude: number }[] = [];
+
+    for (let i = 0; i <= NUM_POINTS; i++) {
+      const t = i / NUM_POINTS;
+      const [lat, lng] = interpolateGreatCircle(
+        flight.departure.lat,
+        flight.departure.lng,
+        flight.arrival.lat,
+        flight.arrival.lng,
+        t,
+      );
+      // Sine curve: 0 at endpoints, peaks at midpoint
+      const altitude = Math.sin(t * Math.PI) * CRUISE_ALTITUDE;
+      points.push({ lat, lng, altitude });
+    }
+
+    return points;
   }, [flight]);
 
   useEffect(() => {
@@ -239,14 +255,14 @@ function FlightRoute({ flight }: { flight: FlightData }) {
 
     const polyline = new googleMaps.maps.maps3d.Polyline3DElement({
       path: routePath,
-      altitudeMode: googleMaps.maps.maps3d.AltitudeMode.CLAMP_TO_GROUND,
-      geodesic: true,
+      altitudeMode: googleMaps.maps.maps3d.AltitudeMode.ABSOLUTE,
+      geodesic: false, // we already interpolated the great circle ourselves
       drawsOccludedSegments: true,
       zIndex: 9999,
-      strokeColor: '#ff00ff',
-      strokeWidth: 12,
-      outerColor: '#111111',
-      outerWidth: 0.5,
+      strokeColor: '#00ff88',
+      strokeWidth: 4,
+      outerColor: '#00ff88',
+      outerWidth: 0,
     });
 
     map3d.append(polyline);
