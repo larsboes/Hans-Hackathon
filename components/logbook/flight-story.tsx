@@ -1,0 +1,151 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import type { FlightData, LogbookEntry, StorySection } from '@/lib/types'
+import { Plane } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+interface FlightStoryProps {
+  flight: FlightData
+  entries: LogbookEntry[]
+}
+
+function SkeletonBlock({ className }: { className?: string }) {
+  return (
+    <div className={cn('animate-pulse rounded-lg bg-muted/60', className)} />
+  )
+}
+
+export function FlightStory({ flight, entries }: FlightStoryProps) {
+  const [sections, setSections] = useState<StorySection[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function generateStory() {
+      try {
+        // Step 1: Generate story text
+        const textRes = await fetch('/api/story/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            flight,
+            entries,
+            achievements: [],
+          }),
+        })
+
+        if (!textRes.ok) throw new Error('Failed to generate story')
+
+        const { sections: storySections } = await textRes.json()
+        if (cancelled) return
+
+        setSections(storySections)
+        setLoading(false)
+
+        // Step 2: Generate images in parallel
+        const imagePromises = storySections.map(
+          async (section: StorySection, index: number) => {
+            try {
+              const imgRes = await fetch('/api/story/generate-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: section.imagePrompt }),
+              })
+
+              if (!imgRes.ok) return null
+
+              const { imageUrl } = await imgRes.json()
+              return { index, imageUrl }
+            } catch {
+              return null
+            }
+          }
+        )
+
+        const results = await Promise.all(imagePromises)
+        if (cancelled) return
+
+        setSections((prev) =>
+          prev.map((s, i) => {
+            const result = results.find((r) => r?.index === i)
+            return result?.imageUrl ? { ...s, imageUrl: result.imageUrl } : s
+          })
+        )
+      } catch (err) {
+        if (!cancelled) {
+          setError('Story konnte nicht generiert werden.')
+          setLoading(false)
+        }
+      }
+    }
+
+    generateStory()
+    return () => { cancelled = true }
+  }, [flight, entries])
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-center text-sm text-destructive">
+        {error}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <Plane className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold text-foreground">
+          Meine Reise
+        </h3>
+        <span className="text-xs text-muted-foreground">
+          {flight.departure.code} → {flight.arrival.code}
+        </span>
+      </div>
+
+      {/* Sections */}
+      {loading ? (
+        <div className="flex flex-col gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex flex-col gap-2">
+              <SkeletonBlock className="h-4 w-32" />
+              <SkeletonBlock className="h-32 w-full rounded-lg" />
+              <SkeletonBlock className="h-3 w-full" />
+              <SkeletonBlock className="h-3 w-3/4" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-5">
+          {sections.map((section, i) => (
+            <div key={i} className="flex flex-col gap-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-primary">
+                {section.title}
+              </h4>
+
+              {/* Image */}
+              {section.imageUrl ? (
+                <img
+                  src={section.imageUrl}
+                  alt={section.title}
+                  className="h-36 w-full rounded-lg object-cover"
+                />
+              ) : (
+                <SkeletonBlock className="h-36 w-full rounded-lg" />
+              )}
+
+              {/* Text */}
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {section.text}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
