@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import { LogbookEntryCard } from '@/components/logbook/logbook-entry'
 import { FlightStory } from '@/components/logbook/flight-story'
-import type { FlightData, LogbookEntry } from '@/lib/types'
+import type { FlightData, LogbookEntry, StorySection } from '@/lib/types'
 import {
   BookOpen,
   Plus,
@@ -28,6 +28,7 @@ interface LogbookPanelProps {
   onDeleteEntry: (id: string) => void
   hasLanded?: boolean
   flight?: FlightData
+  onStoryComplete?: (sections: StorySection[]) => void
 }
 
 const CATEGORIES = [
@@ -39,7 +40,7 @@ const CATEGORIES = [
   { id: 'other' as const, label: 'Other', icon: MessageCircle, color: 'text-muted-foreground' },
 ]
 
-export function LogbookPanel({ flightId, entries, onAddEntry, onDeleteEntry, hasLanded, flight }: LogbookPanelProps) {
+export function LogbookPanel({ flightId, entries, onAddEntry, onDeleteEntry, hasLanded, flight, onStoryComplete }: LogbookPanelProps) {
   const [showForm, setShowForm] = useState(false)
   const [formCategory, setFormCategory] = useState<LogbookEntry['category']>('experience')
   const [formContent, setFormContent] = useState('')
@@ -162,7 +163,7 @@ export function LogbookPanel({ flightId, entries, onAddEntry, onDeleteEntry, has
         {/* Story Section */}
         {showStory && flight && (
           <div className="border-b border-border p-3">
-            <FlightStory flight={flight} entries={entries} />
+            <FlightStory flight={flight} entries={entries} onStoryComplete={onStoryComplete} />
           </div>
         )}
 

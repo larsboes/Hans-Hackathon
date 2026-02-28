@@ -11,7 +11,7 @@ import {
   Timestamp,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import type { LogbookEntry, Achievement } from './types'
+import type { LogbookEntry, Achievement, CompletedFlight } from './types'
 
 // --- Logbook ---
 
@@ -93,5 +93,49 @@ export async function saveAchievement(achievement: Achievement) {
   } catch (error) {
     console.error('Error saving achievement:', error)
     return false
+  }
+}
+
+// --- Completed Flights ---
+
+export async function saveCompletedFlight(flight: CompletedFlight) {
+  try {
+    const docRef = await addDoc(collection(db, 'completed_flights'), {
+      ...flight,
+      savedAt: serverTimestamp(),
+    })
+    return docRef.id
+  } catch (error) {
+    console.error('Error saving completed flight:', error)
+    return null
+  }
+}
+
+export async function getCompletedFlights(): Promise<CompletedFlight[]> {
+  try {
+    const q = query(collection(db, 'completed_flights'), orderBy('savedAt', 'desc'))
+    const snapshot = await getDocs(q)
+    return snapshot.docs.map((doc) => {
+      const data = doc.data()
+      return {
+        id: doc.id,
+        flightNumber: data.flightNumber,
+        airline: data.airline,
+        departure: data.departure,
+        arrival: data.arrival,
+        departureTime: data.departureTime,
+        arrivalTime: data.arrivalTime,
+        storySections: data.storySections,
+        achievementIds: data.achievementIds,
+        logbookEntries: data.logbookEntries,
+        averageMood: data.averageMood,
+        savedAt: data.savedAt instanceof Timestamp
+          ? data.savedAt.toDate().toISOString()
+          : new Date().toISOString(),
+      }
+    })
+  } catch (error) {
+    console.error('Error getting completed flights:', error)
+    return []
   }
 }
