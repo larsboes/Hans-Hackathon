@@ -73,7 +73,7 @@ export function LogbookPanel({ flightId, entries, onAddEntry, onDeleteEntry, has
       <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <BookOpen className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-semibold text-foreground">Logbuch</h2>
+          <h2 className="text-sm font-semibold text-foreground">Logbook</h2>
           <Badge variant="secondary" className="text-xs">{entries.length}</Badge>
         </div>
         <Button
@@ -154,7 +154,7 @@ export function LogbookPanel({ flightId, entries, onAddEntry, onDeleteEntry, has
               size="sm"
             >
               <Sparkles className="h-4 w-4" />
-              Meine Reise generieren
+              Generate My Journey
             </Button>
           </div>
         )}
@@ -174,7 +174,7 @@ export function LogbookPanel({ flightId, entries, onAddEntry, onDeleteEntry, has
               className="flex w-full items-center gap-2 border-b border-border px-4 py-2 text-left text-xs font-medium text-muted-foreground hover:bg-secondary/30"
             >
               <ChevronDown className={cn('h-3 w-3 transition-transform', notesCollapsed && '-rotate-90')} />
-              Meine Notizen ({entries.length})
+              My Notes ({entries.length})
             </button>
             {!notesCollapsed && (
               <div className="flex flex-col gap-2 p-3">

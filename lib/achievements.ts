@@ -23,7 +23,7 @@ export function matchAchievements(entries: LogbookEntry[]): string[] {
 
     // Seat entries
     if (entry.category === 'seat') {
-      if (text.match(/window|view|cloud|sunset|sunrise|sky|14a/)) {
+      if (text.match(/window|view|cloud|sunset|sunrise|sky/)) {
         unlocked.add('cloud-lover') // Window seat lover
       }
       if (text.match(/aisle|legroom|stretch|move/)) {
@@ -64,7 +64,7 @@ export function matchAchievements(entries: LogbookEntry[]): string[] {
 export const ACHIEVEMENTS: Achievement[] = [
   {
     id: 'seat-achievement',
-    name: 'Sitzplatz-Achievement',
+    name: 'Cockpit Visit',
     description: 'Special: You got to sit in the cockpit!',
     imagePrompt: 'Cockpit seat view with glowing instrument panels',
     category: 'seat',

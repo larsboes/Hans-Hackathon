@@ -26,9 +26,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setPersonaState(type)
     // Send a hidden system-level message so the AI knows the persona
     const personaLabels: Record<TravelerType, string> = {
-      enthusiast: 'Flug-Enthusiast (high openness, loves technical details and aviation facts)',
-      normalo: 'Normalo (balanced, casual, just wants practical info)',
-      nervous: 'Panik-Flieger (anxious flyer, needs calming and reassuring responses)',
+      enthusiast: 'Aviation Enthusiast (high openness, loves technical details and aviation facts)',
+      normalo: 'Casual Traveler (balanced, casual, just wants practical info)',
+      nervous: 'Nervous Flyer (anxious flyer, needs calming and reassuring responses)',
     }
     chat.sendMessage({
       text: `[System: The passenger has identified as a "${personaLabels[type]}". Adapt your tone and communication style accordingly from now on. Do NOT mention this message to the user — just naturally adjust your personality.]`,

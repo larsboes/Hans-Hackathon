@@ -1,11 +1,13 @@
 import { createVertex } from '@ai-sdk/google-vertex';
 import { proxyFetch } from './proxy-fetch';
 
-const vertexProject = process.env.GOOGLE_VERTEX_PROJECT;
-const vertexLocation = process.env.GOOGLE_VERTEX_LOCATION ?? 'global';
-const googleClientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-const googlePrivateKey = process.env.GOOGLE_PRIVATE_KEY;
-const googlePrivateKeyId = process.env.GOOGLE_PRIVATE_KEY_ID;
+export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? 'gemini-2.0-flash';
+
+const vertexProject = process.env.VERTEX_PROJECT;
+const vertexLocation = process.env.VERTEX_LOCATION ?? 'global';
+const googleClientEmail = process.env.GCP_CLIENT_EMAIL;
+const googlePrivateKey = process.env.GCP_PRIVATE_KEY;
+const googlePrivateKeyId = process.env.GCP_PRIVATE_KEY_ID;
 
 const googleAuthOptions =
   googleClientEmail && googlePrivateKey

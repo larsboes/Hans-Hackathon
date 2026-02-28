@@ -76,7 +76,7 @@ export function FlightStory({ flight, entries }: FlightStoryProps) {
         )
       } catch (err) {
         if (!cancelled) {
-          setError('Story konnte nicht generiert werden.')
+          setError('Could not generate story.')
           setLoading(false)
         }
       }
@@ -100,7 +100,7 @@ export function FlightStory({ flight, entries }: FlightStoryProps) {
       <div className="flex items-center gap-2">
         <Plane className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-semibold text-foreground">
-          Meine Reise
+          My Journey
         </h3>
         <span className="text-xs text-muted-foreground">
           {flight.departure.code} → {flight.arrival.code}

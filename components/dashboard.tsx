@@ -53,8 +53,6 @@ const MOBILE_TABS: { id: MobileTab; label: string; icon: ReactNode }[] = [
   },
 ];
 
-const INITIAL_LOGBOOK_ENTRIES: LogbookEntry[] = [];
-
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState<MobileTab>('flight');
   const [flight, setFlight] = useState<FlightData>(() => createDemoFlight());
@@ -62,9 +60,47 @@ export function Dashboard() {
     'default',
   );
   const [demoLanded, setDemoLanded] = useState(false);
-  const [logbookEntries, setLogbookEntries] = useState<LogbookEntry[]>(
-    INITIAL_LOGBOOK_ENTRIES,
-  );
+  const [logbookEntries, setLogbookEntries] = useState<LogbookEntry[]>([]);
+
+  const triggerDemo = useCallback(() => {
+    setDemoLanded(true);
+    setLogbookEntries((prev) => {
+      if (prev.length > 0) return prev;
+      return [
+        {
+          id: 'demo-1',
+          flightId: flight.id,
+          category: 'experience',
+          content:
+            'Beautiful sunrise over the Atlantic! The sky turned pink and gold.',
+          mood: 5,
+          timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+        },
+        {
+          id: 'demo-2',
+          flightId: flight.id,
+          category: 'crew',
+          content:
+            'The flight attendant was incredibly kind, brought me an extra blanket without asking.',
+          mood: 5,
+          timestamp: new Date(
+            Date.now() - 2 * 60 * 60 * 1000,
+          ).toISOString(),
+        },
+        {
+          id: 'demo-3',
+          flightId: flight.id,
+          category: 'seat',
+          content:
+            'Window seat with a great view and good legroom for economy.',
+          mood: 4,
+          timestamp: new Date(
+            Date.now() - 3 * 60 * 60 * 1000,
+          ).toISOString(),
+        },
+      ];
+    });
+  }, [flight.id]);
 
   // Fetch real flight data from Lufthansa API
   useEffect(() => {
@@ -112,9 +148,7 @@ export function Dashboard() {
               height={32}
               className="h-8 w-8 rounded-lg object-cover"
             />
-            <h1 className="text-lg font-semibold text-foreground">
-              Impeccable Quail
-            </h1>
+            <h1 className="text-lg font-semibold text-foreground">Hans</h1>
             <span className="hidden rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary sm:inline-block">
               {flight.flightNumber}
             </span>
@@ -122,11 +156,11 @@ export function Dashboard() {
           <div className="flex items-center gap-2">
             {flight && !demoLanded && (
               <button
-                onClick={() => setDemoLanded(true)}
+                onClick={triggerDemo}
                 className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary/15 hover:text-primary"
               >
                 <FastForward className="h-3 w-3" />
-                Skip to Landing
+                Demo
               </button>
             )}
             {flight ? (

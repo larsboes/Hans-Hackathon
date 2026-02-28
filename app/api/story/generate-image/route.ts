@@ -1,4 +1,4 @@
-import { google } from '@/lib/google-model'
+import { google, GEMINI_MODEL } from '@/lib/google-model'
 import { generateText } from 'ai'
 
 export async function POST(req: Request) {
@@ -6,7 +6,7 @@ export async function POST(req: Request) {
 
   try {
     const result = await generateText({
-      model: google('gemini-3-flash-preview'),
+      model: google(GEMINI_MODEL),
       providerOptions: {
         google: {
           responseModalities: ['TEXT', 'IMAGE'],

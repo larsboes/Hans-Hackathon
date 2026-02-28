@@ -7,7 +7,7 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Impeccable Quail - Flight Companion',
+  title: 'Hans - Flight Companion',
   description: 'Your AI-powered flight companion with logbook, achievements, and 3D flight simulation',
   generator: 'v0.app',
   icons: {

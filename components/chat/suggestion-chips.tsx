@@ -1,7 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import type { TravelerType } from '@/lib/types'
+import type { FlightData, TravelerType } from '@/lib/types'
 import { Plane, User, ShieldAlert } from 'lucide-react'
 
 interface SuggestionChipsProps {
@@ -9,33 +9,41 @@ interface SuggestionChipsProps {
   onSelectType: (type: TravelerType) => void
   onSuggestionClick: (suggestion: string) => void
   compact?: boolean
+  flight?: FlightData
 }
 
 const TRAVELER_TYPES: { id: TravelerType; label: string; icon: React.ReactNode }[] = [
-  { id: 'enthusiast', label: 'Flug-Enthusiast', icon: <Plane className="h-3.5 w-3.5" /> },
-  { id: 'normalo', label: 'Normalo', icon: <User className="h-3.5 w-3.5" /> },
-  { id: 'nervous', label: 'Panik-Flieger', icon: <ShieldAlert className="h-3.5 w-3.5" /> },
+  { id: 'enthusiast', label: 'Aviation Enthusiast', icon: <Plane className="h-3.5 w-3.5" /> },
+  { id: 'normalo', label: 'Casual Traveler', icon: <User className="h-3.5 w-3.5" /> },
+  { id: 'nervous', label: 'Nervous Flyer', icon: <ShieldAlert className="h-3.5 w-3.5" /> },
 ]
 
-const SUGGESTIONS: Record<TravelerType, string[]> = {
-  enthusiast: [
-    'What aircraft type are we flying on today?',
-    'What is the current status of flight LH400?',
-    'What flights go from Frankfurt to New York tomorrow?',
-    'Tell me about the airports on this route!',
-  ],
-  normalo: [
-    'Are we on time? Any delays?',
-    'What gate do we depart from?',
-    'What terminal do we arrive at in JFK?',
-    'What is there to do in New York?',
-  ],
-  nervous: [
-    'Is our flight on time? Any turbulence expected?',
-    'How long until we land?',
-    'What is the current flight status?',
-    'Can you tell me something calming about flying?',
-  ],
+function getSuggestions(flight?: FlightData): Record<TravelerType, string[]> {
+  const fn = flight?.flightNumber ?? 'LH 400'
+  const dep = flight?.departure.city ?? 'Frankfurt'
+  const arr = flight?.arrival.city ?? 'New York'
+  const arrCode = flight?.arrival.code ?? 'JFK'
+
+  return {
+    enthusiast: [
+      'What aircraft type are we flying on today?',
+      `What is the current status of flight ${fn}?`,
+      `What flights go from ${dep} to ${arr} tomorrow?`,
+      'Tell me about the airports on this route!',
+    ],
+    normalo: [
+      'Are we on time? Any delays?',
+      'What gate do we depart from?',
+      `What terminal do we arrive at in ${arrCode}?`,
+      `What is there to do in ${arr}?`,
+    ],
+    nervous: [
+      'Is our flight on time? Any turbulence expected?',
+      'How long until we land?',
+      'What is the current flight status?',
+      'Can you tell me something calming about flying?',
+    ],
+  }
 }
 
 export function SuggestionChips({
@@ -43,7 +51,9 @@ export function SuggestionChips({
   onSelectType,
   onSuggestionClick,
   compact = false,
+  flight,
 }: SuggestionChipsProps) {
+  const SUGGESTIONS = getSuggestions(flight)
   if (compact) {
     return (
       <div className="flex flex-wrap gap-1.5">
