@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useState, useCallback, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
-import { createDemoFlight } from '@/lib/flight-data';
 import type { FlightData, LogbookEntry } from '@/lib/types';
 import { ChatPanel } from '@/components/chat/chat-panel';
 import { ChatProvider } from '@/components/chat/chat-context';
@@ -55,7 +54,7 @@ const MOBILE_TABS: { id: MobileTab; label: string; icon: ReactNode }[] = [
 
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState<MobileTab>('flight');
-  const [flight, setFlight] = useState<FlightData>(() => createDemoFlight());
+  const [flight, setFlight] = useState<FlightData | null>(null);
   const [planeModel, setPlaneModel] = useState<'default' | 'glurak' | 'duck'>(
     'default',
   );
@@ -63,6 +62,7 @@ export function Dashboard() {
   const [logbookEntries, setLogbookEntries] = useState<LogbookEntry[]>([]);
 
   const triggerDemo = useCallback(() => {
+    if (!flight) return;
     setDemoLanded(true);
     setLogbookEntries((prev) => {
       if (prev.length > 0) return prev;
@@ -100,25 +100,8 @@ export function Dashboard() {
         },
       ];
     });
-  }, [flight.id]);
+  }, [flight]);
 
-  // Fetch real flight data from Lufthansa API
-  useEffect(() => {
-    fetch('/api/flight/status')
-      .then((res) => {
-        if (!res.ok) throw new Error(`${res.status}`);
-        return res.json();
-      })
-      .then((data: FlightData) => {
-        setFlight(data);
-      })
-      .catch((err) => {
-        console.warn(
-          'Could not fetch live flight data, using demo:',
-          err.message,
-        );
-      });
-  }, []);
 
   const addLogbookEntry = useCallback((entry: LogbookEntry) => {
     setLogbookEntries((prev) => [entry, ...prev]);
@@ -149,9 +132,11 @@ export function Dashboard() {
               className="h-8 w-8 rounded-lg object-cover"
             />
             <h1 className="text-lg font-semibold text-foreground">Hans</h1>
-            <span className="hidden rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary sm:inline-block">
-              {flight.flightNumber}
-            </span>
+            {flight && (
+              <span className="hidden rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary sm:inline-block">
+                {flight.flightNumber}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {flight && !demoLanded && (

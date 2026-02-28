@@ -163,7 +163,7 @@ export function ChatPanel({ flight, onFlightSelected }: ChatPanelProps) {
                 selectedType={travelerType}
                 onSelectType={setTravelerType}
                 onSuggestionClick={handleSuggestionClick}
-                flight={flight}
+                flight={flight ?? undefined}
               />
             )}
           </div>
@@ -195,7 +195,7 @@ export function ChatPanel({ flight, onFlightSelected }: ChatPanelProps) {
             onSelectType={setTravelerType}
             onSuggestionClick={handleSuggestionClick}
             compact
-            flight={flight}
+            flight={flight ?? undefined}
           />
         </div>
       )}
