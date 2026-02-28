@@ -2,27 +2,43 @@
 
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
-import { ACHIEVEMENTS } from '@/lib/achievements'
+import { ACHIEVEMENTS, matchAchievements } from '@/lib/achievements'
 import { AchievementCard } from '@/components/achievements/achievement-card'
-import type { Achievement } from '@/lib/types'
+import type { Achievement, LogbookEntry } from '@/lib/types'
 import { Trophy, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
 interface AchievementsStripProps {
   fullView?: boolean
+  demoLanded?: boolean
+  logbookEntries?: LogbookEntry[]
 }
 
-export function AchievementsStrip({ fullView = false }: AchievementsStripProps) {
+export function AchievementsStrip({ fullView = false, demoLanded = false, logbookEntries = [] }: AchievementsStripProps) {
   const [achievements, setAchievements] = useState<Achievement[]>(
-    ACHIEVEMENTS.map((a, i) => ({
+    ACHIEVEMENTS.map((a) => ({
       ...a,
-      // Unlock first 3 for demo
-      unlockedAt: i < 3 ? new Date().toISOString() : undefined,
-      collected: i === 0,
+      // Achievements unlock after flight — all locked during flight
+      unlockedAt: undefined,
+      collected: false,
     }))
   )
   const [showLibrary, setShowLibrary] = useState(false)
+  const [demoApplied, setDemoApplied] = useState(false)
+
+  // When demo landing triggers, analyze logbook entries to unlock matching achievements
+  if (demoLanded && !demoApplied) {
+    setDemoApplied(true)
+    const unlockIds = matchAchievements(logbookEntries)
+    setAchievements((prev) =>
+      prev.map((a) =>
+        unlockIds.includes(a.id)
+          ? { ...a, unlockedAt: new Date().toISOString() }
+          : a
+      )
+    )
+  }
 
   const collected = achievements.filter((a) => a.collected).length
   const unlocked = achievements.filter((a) => a.unlockedAt).length

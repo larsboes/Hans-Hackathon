@@ -18,6 +18,14 @@ import {
   Shield,
   Globe,
   Loader2,
+  Zap,
+  Crown,
+  Cloud,
+  Footprints,
+  Luggage,
+  HelpCircle,
+  Heart,
+  BookOpen,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -39,6 +47,13 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   utensils: UtensilsCrossed,
   shield: Shield,
   globe: Globe,
+  zap: Zap,
+  crown: Crown,
+  cloud: Cloud,
+  footprints: Footprints,
+  luggage: Luggage,
+  heart: Heart,
+  book: BookOpen,
 }
 
 export function AchievementCard({
@@ -50,12 +65,12 @@ export function AchievementCard({
   const [generating, setGenerating] = useState(false)
   const isUnlocked = !!achievement.unlockedAt
   const isCollected = achievement.collected
+  const isSecret = achievement.secret && !isCollected
   const Icon = ICON_MAP[achievement.icon] || Trophy
 
   async function handleCollect() {
     if (!isUnlocked || isCollected) return
-    
-    // Generate image
+
     setGenerating(true)
     try {
       const response = await fetch('/api/achievements/generate-image', {
@@ -83,16 +98,23 @@ export function AchievementCard({
         className={cn(
           'glass-card relative flex flex-col gap-2 rounded-xl p-3 transition-all',
           isCollected && 'achievement-glow border-primary/30',
-          !isUnlocked && 'opacity-50'
+          !isUnlocked && !isSecret && 'opacity-60'
         )}
       >
         {/* Image area */}
         <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-secondary">
-          {achievement.imageUrl ? (
+          {isSecret ? (
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+              <HelpCircle className="h-8 w-8 text-primary/40" />
+            </div>
+          ) : achievement.imageUrl ? (
             <img
               src={achievement.imageUrl}
               alt={achievement.name}
-              className="h-full w-full object-cover"
+              className={cn(
+                'h-full w-full object-cover transition-all',
+                !isCollected && 'blur-[6px] grayscale'
+              )}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
@@ -108,14 +130,23 @@ export function AchievementCard({
               <Sparkles className="h-3 w-3 text-primary-foreground" />
             </div>
           )}
+          {!isCollected && !isSecret && achievement.imageUrl && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Lock className="h-5 w-5 text-foreground/60 drop-shadow-md" />
+            </div>
+          )}
         </div>
 
         <div>
-          <p className="truncate text-xs font-semibold text-foreground">{achievement.name}</p>
-          <p className="truncate text-[10px] text-muted-foreground">{achievement.description}</p>
+          <p className="truncate text-xs font-semibold text-foreground">
+            {isSecret ? '???' : achievement.name}
+          </p>
+          <p className="truncate text-[10px] text-muted-foreground">
+            {isSecret ? 'Secret achievement' : achievement.description}
+          </p>
         </div>
 
-        {isUnlocked && !isCollected && (
+        {isUnlocked && !isCollected && !isSecret && (
           <Button
             size="sm"
             className="h-6 w-full text-[10px]"
@@ -138,16 +169,24 @@ export function AchievementCard({
       className={cn(
         'glass-card relative flex flex-col gap-3 rounded-xl p-4 transition-all',
         isCollected && 'achievement-glow border-primary/30',
-        !isUnlocked && 'opacity-50'
+        !isUnlocked && !isSecret && 'opacity-60'
       )}
     >
       {/* Image area */}
       <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-secondary">
-        {achievement.imageUrl ? (
+        {isSecret ? (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary/10 to-primary/5">
+            <HelpCircle className="h-10 w-10 text-primary/40" />
+            <span className="text-xs font-medium text-primary/50">Secret</span>
+          </div>
+        ) : achievement.imageUrl ? (
           <img
             src={achievement.imageUrl}
             alt={achievement.name}
-            className="h-full w-full object-cover"
+            className={cn(
+              'h-full w-full object-cover transition-all',
+              !isCollected && 'blur-[6px] grayscale'
+            )}
           />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2">
@@ -164,6 +203,11 @@ export function AchievementCard({
             )}
           </div>
         )}
+        {!isCollected && !isSecret && achievement.imageUrl && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Lock className="h-6 w-6 text-foreground/60 drop-shadow-md" />
+          </div>
+        )}
         {isCollected && (
           <div className="absolute right-2 top-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
             Collected
@@ -172,15 +216,19 @@ export function AchievementCard({
       </div>
 
       <div>
-        <h4 className="text-sm font-semibold text-foreground">{achievement.name}</h4>
-        <p className="mt-0.5 text-xs text-muted-foreground">{achievement.description}</p>
+        <h4 className="text-sm font-semibold text-foreground">
+          {isSecret ? '???' : achievement.name}
+        </h4>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {isSecret ? 'Complete a secret challenge to unlock' : achievement.description}
+        </p>
       </div>
 
       <div className="flex items-center gap-2">
         <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] text-muted-foreground capitalize">
-          {achievement.category}
+          {isSecret ? 'secret' : achievement.category}
         </span>
-        {isUnlocked && !isCollected && (
+        {isUnlocked && !isCollected && !isSecret && (
           <Button
             size="sm"
             className="ml-auto h-7 gap-1 text-xs"

@@ -1,24 +1,26 @@
 import type { FlightData } from './types'
 
-export const DEMO_FLIGHT: FlightData = {
-  id: 'demo-flight-1',
-  flightNumber: 'LH 400',
-  airline: 'Lufthansa',
-  departure: {
-    code: 'FRA',
-    city: 'Frankfurt',
-    lat: 50.0379,
-    lng: 8.5622,
-  },
-  arrival: {
-    code: 'JFK',
-    city: 'New York',
-    lat: 40.6413,
-    lng: -73.7781,
-  },
-  departureTime: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-  arrivalTime: new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(),
-  status: 'in-flight',
+export function createDemoFlight(): FlightData {
+  return {
+    id: 'demo-flight-1',
+    flightNumber: 'LH 400',
+    airline: 'Lufthansa',
+    departure: {
+      code: 'FRA',
+      city: 'Frankfurt',
+      lat: 50.0379,
+      lng: 8.5622,
+    },
+    arrival: {
+      code: 'JFK',
+      city: 'New York',
+      lat: 40.6413,
+      lng: -73.7781,
+    },
+    departureTime: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+    arrivalTime: new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(),
+    status: 'in-flight',
+  }
 }
 
 // Convert lat/lng to 3D sphere coordinates

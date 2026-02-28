@@ -3,7 +3,8 @@
 import { useState, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import { LogbookEntryCard } from '@/components/logbook/logbook-entry'
-import type { LogbookEntry } from '@/lib/types'
+import { FlightStory } from '@/components/logbook/flight-story'
+import type { FlightData, LogbookEntry } from '@/lib/types'
 import {
   BookOpen,
   Plus,
@@ -14,12 +15,19 @@ import {
   UtensilsCrossed,
   Star,
   MessageCircle,
+  Sparkles,
+  ChevronDown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
 interface LogbookPanelProps {
   flightId: string
+  entries: LogbookEntry[]
+  onAddEntry: (entry: LogbookEntry) => void
+  onDeleteEntry: (id: string) => void
+  hasLanded?: boolean
+  flight?: FlightData
 }
 
 const CATEGORIES = [
@@ -31,37 +39,13 @@ const CATEGORIES = [
   { id: 'other' as const, label: 'Other', icon: MessageCircle, color: 'text-muted-foreground' },
 ]
 
-export function LogbookPanel({ flightId }: LogbookPanelProps) {
-  const [entries, setEntries] = useState<LogbookEntry[]>([
-    {
-      id: 'demo-1',
-      flightId,
-      category: 'experience',
-      content: 'Beautiful sunrise over the Atlantic! The sky turned pink and gold.',
-      mood: 5,
-      timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 'demo-2',
-      flightId,
-      category: 'crew',
-      content: 'The flight attendant was incredibly kind, brought me an extra blanket without asking.',
-      mood: 5,
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 'demo-3',
-      flightId,
-      category: 'seat',
-      content: 'Window seat 14A - great view and good legroom for economy.',
-      mood: 4,
-      timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    },
-  ])
+export function LogbookPanel({ flightId, entries, onAddEntry, onDeleteEntry, hasLanded, flight }: LogbookPanelProps) {
   const [showForm, setShowForm] = useState(false)
   const [formCategory, setFormCategory] = useState<LogbookEntry['category']>('experience')
   const [formContent, setFormContent] = useState('')
   const [formMood, setFormMood] = useState(4)
+  const [showStory, setShowStory] = useState(false)
+  const [notesCollapsed, setNotesCollapsed] = useState(false)
 
   const addEntry = useCallback(() => {
     if (!formContent.trim()) return
@@ -75,15 +59,13 @@ export function LogbookPanel({ flightId }: LogbookPanelProps) {
       timestamp: new Date().toISOString(),
     }
 
-    setEntries((prev) => [newEntry, ...prev])
+    onAddEntry(newEntry)
     setFormContent('')
     setFormMood(4)
     setShowForm(false)
-  }, [flightId, formCategory, formContent, formMood])
+  }, [flightId, formCategory, formContent, formMood, onAddEntry])
 
-  const deleteEntry = useCallback((id: string) => {
-    setEntries((prev) => prev.filter((e) => e.id !== id))
-  }, [])
+  const canGenerateStory = hasLanded && entries.length > 0 && flight
 
   return (
     <div className="flex h-full flex-col">
@@ -161,9 +143,48 @@ export function LogbookPanel({ flightId }: LogbookPanelProps) {
         </div>
       )}
 
-      {/* Entries List */}
+      {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
-        {entries.length === 0 ? (
+        {/* Generate Story Button */}
+        {canGenerateStory && !showStory && (
+          <div className="border-b border-border p-3">
+            <Button
+              onClick={() => setShowStory(true)}
+              className="w-full gap-2"
+              size="sm"
+            >
+              <Sparkles className="h-4 w-4" />
+              Meine Reise generieren
+            </Button>
+          </div>
+        )}
+
+        {/* Story Section */}
+        {showStory && flight && (
+          <div className="border-b border-border p-3">
+            <FlightStory flight={flight} entries={entries} />
+          </div>
+        )}
+
+        {/* Entries Section */}
+        {showStory && entries.length > 0 ? (
+          <div>
+            <button
+              onClick={() => setNotesCollapsed(!notesCollapsed)}
+              className="flex w-full items-center gap-2 border-b border-border px-4 py-2 text-left text-xs font-medium text-muted-foreground hover:bg-secondary/30"
+            >
+              <ChevronDown className={cn('h-3 w-3 transition-transform', notesCollapsed && '-rotate-90')} />
+              Meine Notizen ({entries.length})
+            </button>
+            {!notesCollapsed && (
+              <div className="flex flex-col gap-2 p-3">
+                {entries.map((entry) => (
+                  <LogbookEntryCard key={entry.id} entry={entry} onDelete={onDeleteEntry} />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : entries.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
             <BookOpen className="h-8 w-8 text-muted-foreground/50" />
             <p className="text-sm text-muted-foreground">Your logbook is empty</p>
@@ -172,7 +193,7 @@ export function LogbookPanel({ flightId }: LogbookPanelProps) {
         ) : (
           <div className="flex flex-col gap-2 p-3">
             {entries.map((entry) => (
-              <LogbookEntryCard key={entry.id} entry={entry} onDelete={deleteEntry} />
+              <LogbookEntryCard key={entry.id} entry={entry} onDelete={onDeleteEntry} />
             ))}
           </div>
         )}
