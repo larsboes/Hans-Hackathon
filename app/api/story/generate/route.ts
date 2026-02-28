@@ -45,7 +45,8 @@ Return ONLY the JSON array, no markdown fences.`,
       system: 'You are a travel storyteller. You create warm, personal narratives from flight data and logbook entries. Always return valid JSON.',
     })
 
-    const sections: StorySection[] = JSON.parse(result.text)
+    const cleaned = result.text.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
+    const sections: StorySection[] = JSON.parse(cleaned)
 
     return Response.json({ sections })
   } catch (error) {
