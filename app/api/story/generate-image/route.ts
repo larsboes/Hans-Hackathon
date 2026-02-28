@@ -1,4 +1,5 @@
 import { google } from '@/lib/google-model';
+import type { GoogleLanguageModelOptions } from '@ai-sdk/google';
 import { generateImage } from 'ai';
 
 export async function POST(req: Request) {
@@ -7,6 +8,13 @@ export async function POST(req: Request) {
   try {
     const result = await generateImage({
       model: google.image('gemini-3.1-flash-image-preview'),
+      providerOptions: {
+        vertex: {
+          thinkingConfig: {
+            thinkingLevel: 'minimal',
+          },
+        } satisfies GoogleLanguageModelOptions,
+      },
       prompt: `Generate one beautiful, atmospheric travel illustration for the entire journey. Scene: ${prompt}. Style: watercolor illustration, warm colors, dreamy travel photography feel, cinematic lighting.`,
       aspectRatio: '16:9',
     });
