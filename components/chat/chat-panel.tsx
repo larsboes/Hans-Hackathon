@@ -13,7 +13,20 @@ interface ChatPanelProps {
   onFlightSelected: (flight: FlightData) => void;
 }
 
-const EXAMPLE_FLIGHT_NUMBERS = ['LH400', 'LH401', 'LH760', 'LH2037'] as const;
+const EXAMPLE_FLIGHTS = [
+  { flightNumber: 'LH400', route: 'FRA → JFK' },
+  { flightNumber: 'LH401', route: 'JFK → FRA' },
+  { flightNumber: 'LH760', route: 'FRA → DEL' },
+  { flightNumber: 'LH2037', route: 'DUS → MUC' },
+  { flightNumber: 'LH457', route: 'LAX → FRA' },
+  { flightNumber: 'LH458', route: 'MUC → SFO' },
+  { flightNumber: 'LH772', route: 'MUC → BKK' },
+  { flightNumber: 'LH773', route: 'BKK → MUC' },
+  { flightNumber: 'LH716', route: 'FRA → HND' },
+  { flightNumber: 'LH717', route: 'HND → FRA' },
+  { flightNumber: 'LH430', route: 'FRA → ORD' },
+  { flightNumber: 'LH431', route: 'ORD → FRA' },
+] as const;
 
 function getMessageText(message: {
   parts?: Array<{ type: string; text?: string }>;
@@ -141,19 +154,26 @@ export function ChatPanel({ flight, onFlightSelected }: ChatPanelProps) {
                     Enter your flight number or tap one below.
                   </p>
                   <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                    {EXAMPLE_FLIGHT_NUMBERS.map((flightNumber) => (
+                    {EXAMPLE_FLIGHTS.map((flight) => (
                       <Button
-                        key={flightNumber}
+                        key={flight.flightNumber}
                         type="button"
                         variant="secondary"
                         size="sm"
-                        className="h-7 rounded-full px-3 text-xs"
+                        className="h-auto rounded-full px-3 py-1.5"
                         onClick={() =>
-                          void resolveFlightFromInput(flightNumber)
+                          void resolveFlightFromInput(flight.flightNumber)
                         }
                         disabled={isStreaming}
                       >
-                        {flightNumber}
+                        <span className="flex flex-col items-center leading-tight">
+                          <span className="text-xs font-medium">
+                            {flight.flightNumber}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {flight.route}
+                          </span>
+                        </span>
                       </Button>
                     ))}
                   </div>
