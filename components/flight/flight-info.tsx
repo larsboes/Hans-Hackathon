@@ -29,7 +29,7 @@ export function FlightInfo({ flight }: FlightInfoProps) {
     }
 
     update()
-    const interval = setInterval(update, 30_000)
+    const interval = setInterval(update, 1_000)
     return () => clearInterval(interval)
   }, [flight])
 

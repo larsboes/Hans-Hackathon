@@ -11,23 +11,34 @@ import {
 } from '@vis.gl/react-google-maps';
 import type { FlightData } from '@/lib/types';
 import { getCurrentPosition } from '@/lib/flight-data';
-import { AlertCircle, Flame } from 'lucide-react';
+import { AlertCircle, Flame, Bird } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+type PlaneModel = 'default' | 'glurak' | 'duck';
 
 interface FlightGlobeProps {
   flight: FlightData;
-  charizardMode: boolean;
-  onToggleCharizard: () => void;
+  planeModel: PlaneModel;
+  onCyclePlaneModel: () => void;
 }
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyBlr5NkfAp84YskenrxJbi3_HNQcUsYdcE';
 
-interface FlightMap3DProps {
-  flight: FlightData;
-  charizardMode: boolean;
-}
+/* ── 3D model configs ────────────────────────────────────── */
 
-const PLANE_MODEL_SRC = '/api/model/plane.glb';
+const MODEL_3D_CONFIG: Record<PlaneModel, { src: string; scale: number; tilt: number }> = {
+  default: { src: '/api/model/plane.glb', scale: 250, tilt: -90 },
+  glurak: { src: '/assets/3d/glurak.glb', scale: 80_000, tilt: 0 },
+  duck: { src: '/assets/3d/duck.glb', scale: 80_000, tilt: 0 },
+};
+
+const MODEL_LABELS: Record<PlaneModel, { label: string; icon: 'flame' | 'bird' | 'plane' }> = {
+  default: { label: 'Plane', icon: 'plane' },
+  glurak: { label: 'Glurak', icon: 'flame' },
+  duck: { label: 'Duck', icon: 'bird' },
+};
+
+/* ── Helpers ─────────────────────────────────────────────── */
 
 function getHeadingDegrees(
   from: { lat: number; lng: number },
@@ -47,7 +58,14 @@ function getHeadingDegrees(
   return (bearing + 360) % 360;
 }
 
-function FlightMap3D({ flight, charizardMode }: FlightMap3DProps) {
+/* ── Map sub-components ──────────────────────────────────── */
+
+interface FlightMap3DProps {
+  flight: FlightData;
+  planeModel: PlaneModel;
+}
+
+function FlightMap3D({ flight, planeModel }: FlightMap3DProps) {
   const center = useMemo(
     () => ({
       lat: (flight.departure.lat + flight.arrival.lat) / 2,
@@ -94,21 +112,12 @@ function FlightMap3D({ flight, charizardMode }: FlightMap3DProps) {
         drawsWhenOccluded
       />
 
-      <MovingFlightMarker flight={flight} charizardMode={charizardMode} />
+      <MovingFlightMarker flight={flight} planeModel={planeModel} />
     </Map3D>
   );
 }
 
-function MovingFlightMarker({
-  flight,
-  charizardMode,
-}: {
-  flight: FlightData;
-  charizardMode: boolean;
-}) {
-  const map3d = useMap3D();
-  const modelRef = useRef<any>(null);
-
+function useFlightPosition(flight: FlightData) {
   const [position, setPosition] = useState(() => {
     const [lat, lng] = getCurrentPosition(flight);
     return { lat, lng };
@@ -119,9 +128,27 @@ function MovingFlightMarker({
       const [lat, lng] = getCurrentPosition(flight);
       setPosition({ lat, lng });
     }, 30_000);
-
     return () => window.clearInterval(interval);
   }, [flight]);
+
+  return position;
+}
+
+/** 3D .glb model placed on the map via Model3DElement */
+function Model3DMarker({
+  flight,
+  src,
+  scale,
+  tilt,
+}: {
+  flight: FlightData;
+  src: string;
+  scale: number;
+  tilt: number;
+}) {
+  const map3d = useMap3D();
+  const modelRef = useRef<any>(null);
+  const position = useFlightPosition(flight);
 
   const heading = useMemo(
     () =>
@@ -137,18 +164,14 @@ function MovingFlightMarker({
     const Model3DElement = googleMaps?.maps?.maps3d?.Model3DElement;
     const AltitudeMode = googleMaps?.maps?.maps3d?.AltitudeMode;
 
-    if (!map3d || !Model3DElement || charizardMode) {
-      modelRef.current?.remove();
-      modelRef.current = null;
-      return;
-    }
+    if (!map3d || !Model3DElement) return;
 
     const model = new Model3DElement({
-      src: PLANE_MODEL_SRC,
+      src,
       position: { lat: position.lat, lng: position.lng, altitude: 350_000 },
       altitudeMode: AltitudeMode.ABSOLUTE,
-      orientation: { heading, tilt: -90, roll: 0 },
-      scale: 250,
+      scale,
+      orientation: { heading, tilt, roll: 0 },
     });
 
     map3d.append(model);
@@ -160,31 +183,40 @@ function MovingFlightMarker({
         modelRef.current = null;
       }
     };
-  }, [map3d, charizardMode]);
+  // Only create/destroy when map or model source changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map3d, src]);
 
+  // Update position + heading when they change
   useEffect(() => {
-    if (!modelRef.current || charizardMode) return;
-
+    if (!modelRef.current) return;
     modelRef.current.position = {
       lat: position.lat,
       lng: position.lng,
       altitude: 350_000,
     };
-    modelRef.current.orientation = { heading, tilt: -90, roll: 0 };
-  }, [position.lat, position.lng, heading, charizardMode]);
-
-  if (charizardMode) {
-    return (
-      <Marker3D
-        position={{ lat: position.lat, lng: position.lng, altitude: 200_000 }}
-        label="🔥"
-        sizePreserved
-        drawsWhenOccluded
-      />
-    );
-  }
+    modelRef.current.orientation = { heading, tilt, roll: 0 };
+  }, [position.lat, position.lng, heading, tilt]);
 
   return null;
+}
+
+function MovingFlightMarker({
+  flight,
+  planeModel,
+}: {
+  flight: FlightData;
+  planeModel: PlaneModel;
+}) {
+  const config = MODEL_3D_CONFIG[planeModel];
+  return (
+    <Model3DMarker
+      flight={flight}
+      src={config.src}
+      scale={config.scale}
+      tilt={config.tilt}
+    />
+  );
 }
 
 function FlightRoute({ flight }: { flight: FlightData }) {
@@ -224,10 +256,12 @@ function FlightRoute({ flight }: { flight: FlightData }) {
   return null;
 }
 
+/* ── Main component ──────────────────────────────────────── */
+
 export function FlightGlobe({
   flight,
-  charizardMode,
-  onToggleCharizard,
+  planeModel,
+  onCyclePlaneModel,
 }: FlightGlobeProps) {
   if (!GOOGLE_MAPS_API_KEY) {
     return (
@@ -249,13 +283,19 @@ export function FlightGlobe({
 
         <div className="absolute bottom-4 right-4 z-10">
           <Button
-            variant={charizardMode ? 'default' : 'secondary'}
+            variant={planeModel !== 'default' ? 'default' : 'secondary'}
             size="sm"
-            onClick={onToggleCharizard}
+            onClick={onCyclePlaneModel}
             className="gap-1.5 text-xs"
           >
-            <Flame className="h-3.5 w-3.5" />
-            {charizardMode ? 'Glurak Mode ON' : 'Glurak Mode'}
+            {planeModel === 'glurak' ? (
+              <Flame className="h-3.5 w-3.5" />
+            ) : planeModel === 'duck' ? (
+              <Bird className="h-3.5 w-3.5" />
+            ) : (
+              <Flame className="h-3.5 w-3.5" />
+            )}
+            {planeModel === 'default' ? 'Fun Mode' : MODEL_LABELS[planeModel].label + ' Mode'}
           </Button>
         </div>
 
@@ -272,18 +312,24 @@ export function FlightGlobe({
   return (
     <div className="relative h-full w-full">
       <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
-        <FlightMap3D flight={flight} charizardMode={charizardMode} />
+        <FlightMap3D flight={flight} planeModel={planeModel} />
       </APIProvider>
 
       <div className="absolute bottom-4 right-4 z-10">
         <Button
-          variant={charizardMode ? 'default' : 'secondary'}
+          variant={planeModel !== 'default' ? 'default' : 'secondary'}
           size="sm"
-          onClick={onToggleCharizard}
+          onClick={onCyclePlaneModel}
           className="gap-1.5 text-xs"
         >
-          <Flame className="h-3.5 w-3.5" />
-          {charizardMode ? 'Glurak Mode ON' : 'Glurak Mode'}
+          {planeModel === 'glurak' ? (
+            <Flame className="h-3.5 w-3.5" />
+          ) : planeModel === 'duck' ? (
+            <Bird className="h-3.5 w-3.5" />
+          ) : (
+            <Flame className="h-3.5 w-3.5" />
+          )}
+          {planeModel === 'default' ? 'Fun Mode' : MODEL_LABELS[planeModel].label + ' Mode'}
         </Button>
       </div>
 

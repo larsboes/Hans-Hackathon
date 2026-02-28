@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { ChatMessageBubble } from '@/components/chat/chat-message'
 import { SuggestionChips } from '@/components/chat/suggestion-chips'
 import { useChatContext } from '@/components/chat/chat-context'
-import type { FlightData, TravelerType } from '@/lib/types'
+import type { FlightData } from '@/lib/types'
 import { Send, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -13,11 +13,10 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({ flight }: ChatPanelProps) {
-  const [travelerType, setTravelerType] = useState<TravelerType | null>(null)
   const [input, setInput] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const { messages, sendMessage, status } = useChatContext()
+  const { messages, sendMessage, status, persona: travelerType, setPersona: setTravelerType } = useChatContext()
 
   const isStreaming = status === 'streaming' || status === 'submitted'
 

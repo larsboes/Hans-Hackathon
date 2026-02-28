@@ -35,6 +35,7 @@ export interface Achievement {
   imageUrl?: string
   unlockedAt?: string
   collected: boolean
+  secret?: boolean
 }
 
 export interface ChatMessage {
@@ -44,4 +45,11 @@ export interface ChatMessage {
   timestamp: string
 }
 
-export type TravelerType = 'business' | 'leisure' | 'family' | 'frequent'
+export interface StorySection {
+  title: string
+  text: string
+  imagePrompt: string
+  imageUrl?: string
+}
+
+export type TravelerType = 'enthusiast' | 'normalo' | 'nervous'

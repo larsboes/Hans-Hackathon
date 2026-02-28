@@ -1,6 +1,12 @@
-import { Dashboard } from '@/components/dashboard'
+'use client'
+
+import dynamic from 'next/dynamic'
+
+const Dashboard = dynamic(
+  () => import('@/components/dashboard').then(mod => ({ default: mod.Dashboard })),
+  { ssr: false }
+)
 
 export default function Home() {
-  console.log("[v0] Home page rendering")
   return <Dashboard />
 }

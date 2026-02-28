@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import type { TravelerType } from '@/lib/types'
-import { Briefcase, Palmtree, Baby, Repeat } from 'lucide-react'
+import { Plane, User, ShieldAlert } from 'lucide-react'
 
 interface SuggestionChipsProps {
   selectedType: TravelerType | null
@@ -12,36 +12,29 @@ interface SuggestionChipsProps {
 }
 
 const TRAVELER_TYPES: { id: TravelerType; label: string; icon: React.ReactNode }[] = [
-  { id: 'business', label: 'Business', icon: <Briefcase className="h-3.5 w-3.5" /> },
-  { id: 'leisure', label: 'Leisure', icon: <Palmtree className="h-3.5 w-3.5" /> },
-  { id: 'family', label: 'Family', icon: <Baby className="h-3.5 w-3.5" /> },
-  { id: 'frequent', label: 'Frequent Flyer', icon: <Repeat className="h-3.5 w-3.5" /> },
+  { id: 'enthusiast', label: 'Flug-Enthusiast', icon: <Plane className="h-3.5 w-3.5" /> },
+  { id: 'normalo', label: 'Normalo', icon: <User className="h-3.5 w-3.5" /> },
+  { id: 'nervous', label: 'Panik-Flieger', icon: <ShieldAlert className="h-3.5 w-3.5" /> },
 ]
 
 const SUGGESTIONS: Record<TravelerType, string[]> = {
-  business: [
-    'Best restaurants near JFK for a business dinner?',
-    'How to stay productive during a long flight?',
-    'Tips for beating jet lag before a morning meeting',
-    'Lounge recommendations at my destination',
+  enthusiast: [
+    'What aircraft type are we flying on today?',
+    'What is the current status of flight LH400?',
+    'What flights go from Frankfurt to New York tomorrow?',
+    'Tell me about the airports on this route!',
   ],
-  leisure: [
-    'What are must-see attractions in New York?',
-    'Best local food I should try at my destination?',
-    'Hidden gems in NYC most tourists miss',
-    'What is the weather like at my destination?',
+  normalo: [
+    'Are we on time? Any delays?',
+    'What gate do we depart from?',
+    'What terminal do we arrive at in JFK?',
+    'What is there to do in New York?',
   ],
-  family: [
-    'Fun activities for kids near JFK airport?',
-    'Child-friendly restaurants in New York City',
-    'How to keep kids entertained during a long flight?',
-    'Best family neighborhoods to explore in NYC',
-  ],
-  frequent: [
-    'How many miles is this FRA-JFK route?',
-    'Best strategies for earning more airline miles',
-    'Compare airport lounges at Frankfurt vs JFK',
-    'Optimal seat selection for long-haul flights',
+  nervous: [
+    'Is our flight on time? Any turbulence expected?',
+    'How long until we land?',
+    'What is the current flight status?',
+    'Can you tell me something calming about flying?',
   ],
 }
 
@@ -75,9 +68,9 @@ export function SuggestionChips({
 
   return (
     <div className="flex w-full flex-col gap-3">
-      {/* Traveler Type Selection */}
+      {/* Persona Selection */}
       <div>
-        <p className="mb-2 text-center text-xs text-muted-foreground">I am traveling as...</p>
+        <p className="mb-2 text-center text-xs text-muted-foreground">What kind of flyer are you?</p>
         <div className="flex flex-wrap justify-center gap-2">
           {TRAVELER_TYPES.map((type) => (
             <button
