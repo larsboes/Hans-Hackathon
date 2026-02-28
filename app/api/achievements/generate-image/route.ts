@@ -1,4 +1,4 @@
-import { google } from '@ai-sdk/google'
+import { google } from '@/lib/google-model'
 import { generateText } from 'ai'
 
 export async function POST(req: Request) {
@@ -6,19 +6,20 @@ export async function POST(req: Request) {
 
   try {
     const result = await generateText({
-      model: google('gemini-2.5-flash-preview-05-20', {
-        responseModalities: ['TEXT', 'IMAGE'],
-      }),
+      model: google('gemini-3-flash-preview'),
+      providerOptions: {
+        google: {
+          responseModalities: ['TEXT', 'IMAGE'],
+        },
+      },
       prompt: `Generate a beautiful achievement badge image for a flight companion app. The achievement is called "${achievementName}". ${prompt}. Style: digital illustration, badge/medal shape, vibrant colors, aviation theme.`,
     })
 
     // Extract image from response files
     const imageFile = result.files?.[0]
     if (imageFile) {
-      const base64 = Buffer.from(await imageFile.arrayBuffer()).toString('base64')
-      const mimeType = imageFile.type || 'image/png'
       return Response.json({
-        imageUrl: `data:${mimeType};base64,${base64}`,
+        imageUrl: `data:${imageFile.mediaType};base64,${imageFile.base64}`,
         text: result.text,
       })
     }

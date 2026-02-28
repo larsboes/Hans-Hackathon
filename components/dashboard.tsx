@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { DEMO_FLIGHT } from '@/lib/flight-data'
 import type { FlightData } from '@/lib/types'
 import { ChatPanel } from '@/components/chat/chat-panel'
+import { ChatProvider } from '@/components/chat/chat-context'
 import { LogbookPanel } from '@/components/logbook/logbook-panel'
 import { FlightInfo } from '@/components/flight/flight-info'
 import { AchievementsStrip } from '@/components/achievements/achievements-strip'
@@ -48,6 +49,7 @@ export function Dashboard() {
   const [charizardMode, setCharizardMode] = useState(false)
 
   return (
+    <ChatProvider>
     <div className="flex h-screen flex-col overflow-hidden bg-background font-sans">
       {/* Header */}
       <header className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3 lg:px-6">
@@ -68,6 +70,7 @@ export function Dashboard() {
         </div>
       </header>
 
+      {/* Shared ChatPanel — always mounted, positioned by layout */}
       {/* Desktop Layout */}
       <div className="hidden flex-1 overflow-hidden lg:grid lg:grid-cols-[1fr_380px]">
         {/* Main Content Area */}
@@ -77,14 +80,14 @@ export function Dashboard() {
             <h2 className="text-sm font-medium text-muted-foreground">Current Flight</h2>
             <FlightInfo flight={flight} />
           </div>
-          
+
           {/* Top: Logbook + 3D Globe */}
           <div className="flex flex-1 overflow-hidden">
             {/* Logbook */}
             <div className="w-[380px] shrink-0 border-r border-border">
               <LogbookPanel flightId={flight.id} />
             </div>
-            
+
             {/* 3D Globe */}
             <div className="relative flex-1">
               <FlightGlobe
@@ -94,14 +97,14 @@ export function Dashboard() {
               />
             </div>
           </div>
-          
+
           {/* Bottom: Achievements */}
           <div className="shrink-0 border-t border-border">
             <AchievementsStrip />
           </div>
         </div>
 
-        {/* Chat Sidebar */}
+        {/* Chat Sidebar — desktop */}
         <div className="border-l border-border">
           <ChatPanel flight={flight} />
         </div>
@@ -109,9 +112,9 @@ export function Dashboard() {
 
       {/* Mobile Layout */}
       <div className="flex flex-1 flex-col overflow-hidden lg:hidden">
-        {/* Mobile Content */}
-        <div className="flex-1 overflow-hidden">
-          {activeTab === 'flight' && (
+        {/* Mobile Content — all tabs always mounted, shown/hidden via CSS */}
+        <div className="relative flex-1 overflow-hidden">
+          <div className={cn('absolute inset-0', activeTab !== 'flight' && 'pointer-events-none invisible')}>
             <div className="flex h-full flex-col">
               <div className="shrink-0 border-b border-border px-4 py-2">
                 <FlightInfo flight={flight} />
@@ -124,18 +127,16 @@ export function Dashboard() {
                 />
               </div>
             </div>
-          )}
-          {activeTab === 'logbook' && (
+          </div>
+          <div className={cn('absolute inset-0', activeTab !== 'logbook' && 'pointer-events-none invisible')}>
             <LogbookPanel flightId={flight.id} />
-          )}
-          {activeTab === 'chat' && (
+          </div>
+          <div className={cn('absolute inset-0', activeTab !== 'chat' && 'pointer-events-none invisible')}>
             <ChatPanel flight={flight} />
-          )}
-          {activeTab === 'achievements' && (
-            <div className="h-full overflow-y-auto p-4">
-              <AchievementsStrip fullView />
-            </div>
-          )}
+          </div>
+          <div className={cn('absolute inset-0 overflow-y-auto p-4', activeTab !== 'achievements' && 'pointer-events-none invisible')}>
+            <AchievementsStrip fullView />
+          </div>
         </div>
 
         {/* Mobile Tab Bar */}
@@ -158,5 +159,6 @@ export function Dashboard() {
         </nav>
       </div>
     </div>
+    </ChatProvider>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import type { FlightData } from '@/lib/types'
 import { getFlightProgress } from '@/lib/flight-data'
 import { Plane, Clock } from 'lucide-react'
@@ -10,15 +10,27 @@ interface FlightInfoProps {
 }
 
 export function FlightInfo({ flight }: FlightInfoProps) {
-  const progress = useMemo(() => Math.round(getFlightProgress(flight) * 100), [flight])
+  const [progress, setProgress] = useState(0)
+  const [timeRemaining, setTimeRemaining] = useState('')
 
-  const timeRemaining = useMemo(() => {
-    const arrival = new Date(flight.arrivalTime).getTime()
-    const remaining = arrival - Date.now()
-    if (remaining <= 0) return 'Arrived'
-    const hours = Math.floor(remaining / (1000 * 60 * 60))
-    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60))
-    return `${hours}h ${minutes}m remaining`
+  useEffect(() => {
+    function update() {
+      setProgress(Math.round(getFlightProgress(flight) * 100))
+
+      const arrival = new Date(flight.arrivalTime).getTime()
+      const remaining = arrival - Date.now()
+      if (remaining <= 0) {
+        setTimeRemaining('Arrived')
+      } else {
+        const hours = Math.floor(remaining / (1000 * 60 * 60))
+        const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60))
+        setTimeRemaining(`${hours}h ${minutes}m remaining`)
+      }
+    }
+
+    update()
+    const interval = setInterval(update, 30_000)
+    return () => clearInterval(interval)
   }, [flight])
 
   return (

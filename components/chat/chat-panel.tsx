@@ -1,11 +1,9 @@
 'use client'
 
-import { useChat } from '@ai-sdk/react'
-import { DefaultChatTransport } from 'ai'
-import { useState, useRef, useEffect, useMemo } from 'react'
-import { cn } from '@/lib/utils'
+import { useState, useRef, useEffect } from 'react'
 import { ChatMessageBubble } from '@/components/chat/chat-message'
 import { SuggestionChips } from '@/components/chat/suggestion-chips'
+import { useChatContext } from '@/components/chat/chat-context'
 import type { FlightData, TravelerType } from '@/lib/types'
 import { Send, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -19,11 +17,7 @@ export function ChatPanel({ flight }: ChatPanelProps) {
   const [input, setInput] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const transport = useMemo(() => new DefaultChatTransport({ api: '/api/chat' }), [])
-
-  const { messages, sendMessage, status } = useChat({
-    transport,
-  })
+  const { messages, sendMessage, status } = useChatContext()
 
   const isStreaming = status === 'streaming' || status === 'submitted'
 
