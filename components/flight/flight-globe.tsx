@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   APIProvider,
   GestureHandling,
@@ -27,6 +27,26 @@ interface FlightMap3DProps {
   charizardMode: boolean;
 }
 
+const PLANE_MODEL_SRC = '/api/model/plane.glb';
+
+function getHeadingDegrees(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+) {
+  const fromLat = (from.lat * Math.PI) / 180;
+  const toLat = (to.lat * Math.PI) / 180;
+  const deltaLng = ((to.lng - from.lng) * Math.PI) / 180;
+
+  const y = Math.sin(deltaLng) * Math.cos(toLat);
+  const x =
+    Math.cos(fromLat) * Math.sin(toLat) -
+    Math.sin(fromLat) * Math.cos(toLat) * Math.cos(deltaLng);
+
+  const bearing = (Math.atan2(y, x) * 180) / Math.PI;
+
+  return (bearing + 360) % 360;
+}
+
 function FlightMap3D({ flight, charizardMode }: FlightMap3DProps) {
   const center = useMemo(
     () => ({
@@ -41,9 +61,9 @@ function FlightMap3D({ flight, charizardMode }: FlightMap3DProps) {
     <Map3D
       defaultCenter={center}
       defaultHeading={0}
-      defaultTilt={0}
+      defaultTilt={45}
       defaultRoll={0}
-      defaultRange={9_000_000}
+      defaultRange={4_000_000}
       mode={MapMode.SATELLITE}
       gestureHandling={GestureHandling.GREEDY}
       className="h-full w-full"
@@ -86,6 +106,9 @@ function MovingFlightMarker({
   flight: FlightData;
   charizardMode: boolean;
 }) {
+  const map3d = useMap3D();
+  const modelRef = useRef<any>(null);
+
   const [position, setPosition] = useState(() => {
     const [lat, lng] = getCurrentPosition(flight);
     return { lat, lng };
@@ -100,14 +123,68 @@ function MovingFlightMarker({
     return () => window.clearInterval(interval);
   }, [flight]);
 
-  return (
-    <Marker3D
-      position={{ lat: position.lat, lng: position.lng, altitude: 200_000 }}
-      label={charizardMode ? '🔥' : '✈️'}
-      sizePreserved
-      drawsWhenOccluded
-    />
+  const heading = useMemo(
+    () =>
+      getHeadingDegrees(
+        { lat: position.lat, lng: position.lng },
+        { lat: flight.arrival.lat, lng: flight.arrival.lng },
+      ),
+    [position.lat, position.lng, flight.arrival.lat, flight.arrival.lng],
   );
+
+  useEffect(() => {
+    const googleMaps = (window as unknown as { google?: any }).google;
+    const Model3DElement = googleMaps?.maps?.maps3d?.Model3DElement;
+    const AltitudeMode = googleMaps?.maps?.maps3d?.AltitudeMode;
+
+    if (!map3d || !Model3DElement || charizardMode) {
+      modelRef.current?.remove();
+      modelRef.current = null;
+      return;
+    }
+
+    const model = new Model3DElement({
+      src: PLANE_MODEL_SRC,
+      position: { lat: position.lat, lng: position.lng, altitude: 350_000 },
+      altitudeMode: AltitudeMode.ABSOLUTE,
+      orientation: { heading, tilt: -90, roll: 0 },
+      scale: 250,
+    });
+
+    map3d.append(model);
+    modelRef.current = model;
+
+    return () => {
+      model.remove();
+      if (modelRef.current === model) {
+        modelRef.current = null;
+      }
+    };
+  }, [map3d, charizardMode]);
+
+  useEffect(() => {
+    if (!modelRef.current || charizardMode) return;
+
+    modelRef.current.position = {
+      lat: position.lat,
+      lng: position.lng,
+      altitude: 350_000,
+    };
+    modelRef.current.orientation = { heading, tilt: -90, roll: 0 };
+  }, [position.lat, position.lng, heading, charizardMode]);
+
+  if (charizardMode) {
+    return (
+      <Marker3D
+        position={{ lat: position.lat, lng: position.lng, altitude: 200_000 }}
+        label="🔥"
+        sizePreserved
+        drawsWhenOccluded
+      />
+    );
+  }
+
+  return null;
 }
 
 function FlightRoute({ flight }: { flight: FlightData }) {
