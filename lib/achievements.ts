@@ -175,7 +175,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: 'crew-favorite',
     name: 'Crew Favorite',
-    description: '???',
+    description: 'The crew loves you! Your kindness earned a golden star.',
     imagePrompt: 'A golden star badge given by a flight attendant',
     category: 'crew',
     icon: 'heart',
@@ -185,7 +185,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: 'sky-storyteller',
     name: 'Sky Storyteller',
-    description: '???',
+    description: 'You documented your journey with 3+ logbook entries!',
     imagePrompt: 'A book of stories floating among the clouds',
     category: 'experience',
     icon: 'book',

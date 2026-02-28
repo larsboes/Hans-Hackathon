@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { ACHIEVEMENTS, matchAchievements } from '@/lib/achievements'
 import { AchievementCard } from '@/components/achievements/achievement-card'
+import { AchievementPopup } from '@/components/achievements/achievement-popup'
 import type { Achievement, LogbookEntry } from '@/lib/types'
 import { Trophy, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -13,9 +14,16 @@ interface AchievementsStripProps {
   fullView?: boolean
   demoLanded?: boolean
   logbookEntries?: LogbookEntry[]
+  onEarningsChange?: (euros: number) => void
 }
 
-export function AchievementsStrip({ fullView = false, demoLanded = false, logbookEntries = [] }: AchievementsStripProps) {
+function calcEarnings(list: Achievement[]): number {
+  return list
+    .filter((a) => a.collected)
+    .reduce((sum, a) => sum + (a.secret ? 2 : 0.5), 0)
+}
+
+export function AchievementsStrip({ fullView = false, demoLanded = false, logbookEntries = [], onEarningsChange }: AchievementsStripProps) {
   const [achievements, setAchievements] = useState<Achievement[]>(
     ACHIEVEMENTS.map((a) => ({
       ...a,
@@ -26,22 +34,36 @@ export function AchievementsStrip({ fullView = false, demoLanded = false, logboo
   )
   const [showLibrary, setShowLibrary] = useState(false)
   const [demoApplied, setDemoApplied] = useState(false)
+  const [popupQueue, setPopupQueue] = useState<Achievement[]>([])
 
   // When demo landing triggers, analyze logbook entries to unlock matching achievements
-  if (demoLanded && !demoApplied) {
+  useEffect(() => {
+    if (!demoLanded || demoApplied) return
     setDemoApplied(true)
     const unlockIds = matchAchievements(logbookEntries)
-    setAchievements((prev) =>
-      prev.map((a) =>
+    setAchievements((prev) => {
+      const next = prev.map((a) =>
         unlockIds.includes(a.id)
-          ? { ...a, unlockedAt: new Date().toISOString() }
+          ? {
+              ...a,
+              unlockedAt: new Date().toISOString(),
+              // Secret achievements auto-collect (gifted by crew)
+              collected: a.secret ? true : a.collected,
+            }
           : a
       )
-    )
-  }
+      setPopupQueue(next.filter((a) => unlockIds.includes(a.id)))
+      return next
+    })
+  }, [demoLanded, demoApplied, logbookEntries])
 
   const collected = achievements.filter((a) => a.collected).length
   const unlocked = achievements.filter((a) => a.unlockedAt).length
+  const currentEarnings = calcEarnings(achievements)
+
+  useEffect(() => {
+    onEarningsChange?.(currentEarnings)
+  }, [currentEarnings, onEarningsChange])
 
   function handleCollect(id: string) {
     setAchievements((prev) =>
@@ -59,44 +81,56 @@ export function AchievementsStrip({ fullView = false, demoLanded = false, logboo
     )
   }
 
+  const popup = popupQueue.length > 0 ? (
+    <AchievementPopup
+      achievements={popupQueue}
+      onDone={() => setPopupQueue([])}
+    />
+  ) : null
+
   if (fullView) {
     return (
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Achievement Library</h2>
+      <>
+        {popup}
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold text-foreground">Achievement Library</h2>
+            </div>
+            <Badge variant="secondary">{collected}/{achievements.length} collected</Badge>
           </div>
-          <Badge variant="secondary">{collected}/{achievements.length} collected</Badge>
-        </div>
 
-        {/* Progress bar */}
-        <div className="flex items-center gap-3">
-          <div className="h-2 flex-1 overflow-hidden rounded-full bg-secondary">
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${(collected / achievements.length) * 100}%` }}
-            />
+          {/* Progress bar */}
+          <div className="flex items-center gap-3">
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-secondary">
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{ width: `${(collected / achievements.length) * 100}%` }}
+              />
+            </div>
+            <span className="text-xs text-muted-foreground">{Math.round((collected / achievements.length) * 100)}%</span>
           </div>
-          <span className="text-xs text-muted-foreground">{Math.round((collected / achievements.length) * 100)}%</span>
-        </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {achievements.map((achievement) => (
-            <AchievementCard
-              key={achievement.id}
-              achievement={achievement}
-              onCollect={handleCollect}
-              onImageGenerated={handleImageGenerated}
-            />
-          ))}
+          {/* Grid */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {achievements.map((achievement) => (
+              <AchievementCard
+                key={achievement.id}
+                achievement={achievement}
+                onCollect={handleCollect}
+                onImageGenerated={handleImageGenerated}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
   return (
+    <>
+    {popup}
     <div className="flex flex-col gap-2 p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -128,5 +162,6 @@ export function AchievementsStrip({ fullView = false, demoLanded = false, logboo
         ))}
       </div>
     </div>
+    </>
   )
 }

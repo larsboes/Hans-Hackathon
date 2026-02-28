@@ -17,6 +17,7 @@ import {
   Globe,
   Loader2,
   FastForward,
+  Coins,
 } from 'lucide-react';
 
 const FlightGlobe = dynamic(
@@ -60,6 +61,7 @@ export function Dashboard() {
   );
   const [demoLanded, setDemoLanded] = useState(false);
   const [logbookEntries, setLogbookEntries] = useState<LogbookEntry[]>([]);
+  const [earnings, setEarnings] = useState(0);
 
   const triggerDemo = useCallback(() => {
     if (!flight) return;
@@ -139,6 +141,12 @@ export function Dashboard() {
             )}
           </div>
           <div className="flex items-center gap-2">
+            {earnings > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-chart-4/15 px-2.5 py-1 text-xs font-semibold text-chart-4">
+                <Coins className="h-3.5 w-3.5" />
+                {earnings.toFixed(2)} &euro;
+              </span>
+            )}
             {flight && !demoLanded && (
               <button
                 onClick={triggerDemo}
@@ -235,6 +243,7 @@ export function Dashboard() {
               <AchievementsStrip
                 demoLanded={demoLanded}
                 logbookEntries={logbookEntries}
+                onEarningsChange={setEarnings}
               />
             </div>
           </div>
@@ -342,6 +351,7 @@ export function Dashboard() {
                 fullView
                 demoLanded={demoLanded}
                 logbookEntries={logbookEntries}
+                onEarningsChange={setEarnings}
               />
             </div>
           </div>

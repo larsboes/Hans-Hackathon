@@ -65,7 +65,7 @@ export function AchievementCard({
   const [generating, setGenerating] = useState(false)
   const isUnlocked = !!achievement.unlockedAt
   const isCollected = achievement.collected
-  const isSecret = achievement.secret && !isCollected
+  const isSecret = achievement.secret && !isUnlocked && !isCollected
   const Icon = ICON_MAP[achievement.icon] || Trophy
 
   async function handleCollect() {
